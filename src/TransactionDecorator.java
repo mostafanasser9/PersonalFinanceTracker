@@ -1,5 +1,3 @@
-package PersonalFinanceTracker;
-
 import java.awt.Color;
 import java.util.Date;
 

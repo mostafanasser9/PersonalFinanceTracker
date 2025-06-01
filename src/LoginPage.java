@@ -35,8 +35,8 @@ public class LoginPage {
                     String username = textField1.getText();
                     String password = new String(passwordField1.getPassword());
                     if (userManager.loginUser(username, password)) {
-                        // Open Dashboard
-                        new Dashboard();
+                        // Open Dashboard and pass the username (email)
+                        new Dashboard(username);
                         // Close current LoginPage
                         frame.dispose();
                     } else {

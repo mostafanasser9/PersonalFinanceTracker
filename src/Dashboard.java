@@ -1,6 +1,3 @@
-import PersonalFinanceTracker.DisplayableTransaction;
-import PersonalFinanceTracker.FlaggedTransaction;
-import PersonalFinanceTracker.TransactionDecorator;
 import java.awt.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -25,6 +22,7 @@ public class Dashboard {
     private JButton historyLogButton; // New button for History Log
     private JButton flagTransactionButton; // New button for flagging transactions
     private JFrame frame;
+    private String currentUserEmail; // Added to store the logged-in user's email
 
     // Fields for CardLayout components bound from .form
     private JPanel viewSwitchPanel; // The panel with CardLayout
@@ -34,8 +32,12 @@ public class Dashboard {
     // Store DisplayableTransaction objects directly
     private ArrayList<DisplayableTransaction> transactions; // Changed from Transaction to DisplayableTransaction
     private final String[] columnNames = {"Date", "Description", "Category", "Amount", "Type"}; // Added Type
+    private TransactionFlagging transactionFlaggingProxy; // Added proxy
 
-    public Dashboard() {
+    public Dashboard(String userEmail) { // Modified constructor to accept user email
+        this.currentUserEmail = userEmail;
+        this.transactionFlaggingProxy = new TransactionFlaggingProxy(this.currentUserEmail, this); // Initialize proxy
+
         frame = new JFrame("Dashboard");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setPreferredSize(new Dimension(800, 600)); // As per .form
@@ -177,7 +179,8 @@ public class Dashboard {
                 if (selectedRow >= 0) {
                     int modelRow = dataTable.convertRowIndexToModel(selectedRow);
                     DisplayableTransaction transactionToFlag = transactions.get(modelRow);
-                    handleFlagTransaction(modelRow, transactionToFlag);
+                    // Use the proxy to handle flagging
+                    handleFlagTransactionViaProxy(modelRow, transactionToFlag);
                 } else {
                     JOptionPane.showMessageDialog(frame, "Please select a transaction from the list to flag.", "No Selection", JOptionPane.WARNING_MESSAGE);
                 }
@@ -187,8 +190,8 @@ public class Dashboard {
         // Action listener for Upgrade button
         if (upgradeButton != null) {
             upgradeButton.addActionListener(e -> {
-                // Open PaymentPage
-                new PaymentPage();
+                // Open PaymentPage and pass the current user's email
+                new PaymentPage(currentUserEmail);
                 // Optionally, you might want to close or hide the dashboard
                 // frame.dispose(); // or frame.setVisible(false);
             });
@@ -318,7 +321,20 @@ public class Dashboard {
         }
     }
 
-    private void handleFlagTransaction(int modelRow, DisplayableTransaction transactionToFlag) {
+    // Method to be called by RealTransactionFlagging
+    public void updateTransactionInList(int modelRow, DisplayableTransaction transaction) {
+        if (modelRow >= 0 && modelRow < transactions.size()) {
+            transactions.set(modelRow, transaction);
+        }
+    }
+
+    // Method to be called by RealTransactionFlagging or other internal methods
+    public void refreshViews() {
+        refreshTable();
+        populateGridView();
+    }
+
+    private void handleFlagTransactionViaProxy(int modelRow, DisplayableTransaction transactionToFlag) {
         if (transactionToFlag == null) return;
 
         if (transactionToFlag instanceof FlaggedTransaction) {
@@ -331,21 +347,19 @@ public class Dashboard {
                     null, options, options[2]);
 
             if (choice == JOptionPane.YES_OPTION) { // Unflag
-                DisplayableTransaction original = transactionToFlag;
-                while (original instanceof TransactionDecorator) {
-                    original = ((TransactionDecorator) original).getDecoratedTransaction(); // Use getter
-                }
-                transactions.set(modelRow, original);
-                HistoryLogger.getInstance().addLog("Transaction Unflagged: " + original.getDescription());
-                refreshViews();
-                return;
+                transactionFlaggingProxy.unflagTransaction(modelRow, transactionToFlag);
             } else if (choice == JOptionPane.NO_OPTION) { // Change Color
-                // Proceed to color choice, effectively unwrap then re-wrap with new color
-            } else { // Cancel or closed
-                return;
+                // Proceed to color choice
+                promptForFlagColorAndFlag(modelRow, transactionToFlag);
             }
+            // If Cancel or closed, do nothing
+        } else {
+            // If not currently flagged, prompt for color and flag
+            promptForFlagColorAndFlag(modelRow, transactionToFlag);
         }
+    }
 
+    private void promptForFlagColorAndFlag(int modelRow, DisplayableTransaction transactionToFlag) {
         String[] colors = {"Brown", "Red"};
         String chosenColorName = (String) JOptionPane.showInputDialog(frame,
                 "Choose a flag color:",
@@ -362,23 +376,25 @@ public class Dashboard {
             } else { // Brown
                 flagColor = new Color(150, 75, 0); // Hex: #964B00
             }
+            transactionFlaggingProxy.flagTransaction(modelRow, transactionToFlag, flagColor);
+            JOptionPane.showMessageDialog(frame, "Transaction flag status updated!", "Success", JOptionPane.INFORMATION_MESSAGE);
 
-            DisplayableTransaction baseTransaction = transactionToFlag;
-            // If it was already flagged (e.g. changing color), unwrap to the actual base transaction
-            if (baseTransaction instanceof TransactionDecorator) { // More general check for any decorator
-                 DisplayableTransaction current = baseTransaction;
-                 while (current instanceof TransactionDecorator) {
-                    current = ((TransactionDecorator) current).getDecoratedTransaction(); // Use getter
-                 }
-                 baseTransaction = current;
-            }
-
-            FlaggedTransaction flagged = new FlaggedTransaction(baseTransaction, flagColor);
-            transactions.set(modelRow, flagged);
-            refreshViews();
-            HistoryLogger.getInstance().addLog("Transaction Flagged "+ chosenColorName + ": " + flagged.getDescription());
-            JOptionPane.showMessageDialog(frame, "Transaction flagged successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
         }
+    }
+
+
+    // The original handleFlagTransaction is now mostly handled by RealTransactionFlagging
+    // and the proxy. We keep parts of the UI logic here or move it if it makes sense.
+    // For now, the core logic is in RealTransactionFlagging, accessed via proxy.
+    // The UI part (dialogs) can remain here or be refactored.
+    // The method below is effectively replaced by handleFlagTransactionViaProxy and promptForFlagColorAndFlag
+    private void handleFlagTransaction(int modelRow, DisplayableTransaction transactionToFlag) {
+        // This method\'s logic is now split and uses the proxy.
+        // See handleFlagTransactionViaProxy and promptForFlagColorAndFlag
+        // If you need to call this directly, ensure it uses the proxy or refactor.
+        // For now, direct calls to this might bypass the proxy if not careful.
+        // It\'s better to call handleFlagTransactionViaProxy.
+        System.out.println("handleFlagTransaction called - should be routed via proxy now.");
     }
 
 
@@ -411,12 +427,6 @@ public class Dashboard {
         }
     }
     
-    private void refreshViews() {
-        refreshTable();
-        populateGridView();
-    }
-
-
     private void populateGridView() {
         if (gridViewContainerPanel == null) {
             System.err.println("gridViewContainerPanel is null, cannot populate grid view.");

@@ -1,4 +1,3 @@
-import PersonalFinanceTracker.DisplayableTransaction;
 import java.awt.Color; // Import Color
 import java.util.Date; // Import the interface
 

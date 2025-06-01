@@ -1,4 +1,4 @@
-alylol@gmail.com:1234
-admin:admin
-mostafaadelnasser@gmail.com:12345678
-alylol04@gmail.com:12345
+alylol@gmail.com:1234:standard
+admin:admin:premium
+mostafaadelnasser@gmail.com:12345678:standard
+alylol04@gmail.com:12345:standard
