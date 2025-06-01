@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 
 public class HistoryLogPage extends JFrame {
     private JPanel historyLogPanel;
@@ -16,12 +17,16 @@ public class HistoryLogPage extends JFrame {
         setLocationRelativeTo(null); // Center the window
         setVisible(true);
 
-        // Dummy data for now, will be replaced with actual log data
+        // Load actual log data
         DefaultListModel<String> listModel = new DefaultListModel<>();
-        listModel.addElement("User logged in - 2025-05-30 10:00:00");
-        listModel.addElement("Added transaction: Groceries $50 - 2025-05-30 10:05:00");
-        listModel.addElement("Viewed dashboard - 2025-05-30 10:06:00");
-        listModel.addElement("User logged out - 2025-05-30 10:15:00");
+        List<String> logs = HistoryLogger.getLogs();
+        if (logs.isEmpty()) {
+            listModel.addElement("No history logs recorded yet.");
+        } else {
+            for (String log : logs) {
+                listModel.addElement(log);
+            }
+        }
         logList.setModel(listModel);
 
         backButton.addActionListener(new ActionListener() {
