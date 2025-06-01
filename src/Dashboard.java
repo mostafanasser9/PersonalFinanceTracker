@@ -125,7 +125,7 @@ public class Dashboard {
                         refreshViews(); // Refresh both table and grid view
 
                         // System.out.println("LOG: Transaction Added - " + newTransaction.toString());
-                        HistoryLogger.addLog("Transaction Added: " + newTransaction.getDescription() + " $" + newTransaction.getAmount());
+                        HistoryLogger.getInstance().addLog("Transaction Added: " + newTransaction.getDescription() + " $" + newTransaction.getAmount());
                         JOptionPane.showMessageDialog(frame, "Transaction added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                     } catch (ParseException ex) {
                         JOptionPane.showMessageDialog(frame, "Invalid date format. Please use YYYY-MM-DD.", "Input Error", JOptionPane.ERROR_MESSAGE);
@@ -214,7 +214,7 @@ public class Dashboard {
             transactions.remove(transactionToDelete); // Remove from our list
             refreshViews(); // Refresh both table and grid view
             // System.out.println("LOG: Transaction Deleted - " + transactionToDelete.toString());
-            HistoryLogger.addLog("Transaction Deleted: " + transactionToDelete.getDescription() + " $" + transactionToDelete.getAmount());
+            HistoryLogger.getInstance().addLog("Transaction Deleted: " + transactionToDelete.getDescription() + " $" + transactionToDelete.getAmount());
             JOptionPane.showMessageDialog(frame, "Transaction deleted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
         }
     }
@@ -267,7 +267,7 @@ public class Dashboard {
                 transactions.add(finalDuplicatedTransaction);
                 refreshViews();
                 // System.out.println("LOG: Transaction Duplicated and Added - " + finalDuplicatedTransaction.toString());
-                HistoryLogger.addLog("Transaction Duplicated: " + finalDuplicatedTransaction.getDescription() + " $" + finalDuplicatedTransaction.getAmount());
+                HistoryLogger.getInstance().addLog("Transaction Duplicated: " + finalDuplicatedTransaction.getDescription() + " $" + finalDuplicatedTransaction.getAmount());
                 JOptionPane.showMessageDialog(frame, "Transaction duplicated and added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
             } catch (ParseException ex) {
                 JOptionPane.showMessageDialog(frame, "Invalid date format. Please use YYYY-MM-DD.", "Input Error", JOptionPane.ERROR_MESSAGE);

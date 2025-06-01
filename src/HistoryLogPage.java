@@ -19,7 +19,7 @@ public class HistoryLogPage extends JFrame {
 
         // Load actual log data
         DefaultListModel<String> listModel = new DefaultListModel<>();
-        List<String> logs = HistoryLogger.getLogs();
+        List<String> logs = HistoryLogger.getInstance().getLogs();
         if (logs.isEmpty()) {
             listModel.addElement("No history logs recorded yet.");
         } else {
