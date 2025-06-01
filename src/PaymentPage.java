@@ -31,44 +31,42 @@ public class PaymentPage extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 double upgradeAmount = 10.0; // Example upgrade amount
+                Command commandToExecute = null;
 
                 if (payPalRadioButton.isSelected()) {
-                    paymentProcessor = new PayPalAdapter(new PayPalGateway());
-                    String payPalEmail = cardOwnerField.getText(); // Use cardOwnerField for PayPal email
-                    // String payPalPassword = new String(cardNumberField.getPassword()); // If PayPal needs a password
-
+                    paymentProcessor = new PayPalAdapter(new PayPalGateway()); // Initialize the paymentProcessor
+                    String payPalEmail = cardOwnerField.getText();
                     if (payPalEmail.isEmpty()) {
-                        // JOptionPane.showMessageDialog(PaymentPage.this, "PayPal email cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
-                        // return;
                         payPalEmail = currentUserEmail; // Default to current user's email if field is empty
                     }
-                    // For this mock, the PayPalGateway doesn't use a password, so cardNumberField is not directly used here.
-                    // If it were, you'd pass payPalPassword or similar.
-                    if (paymentProcessor.processPayment(upgradeAmount, payPalEmail)) {
-                        upgradeUser();
-                    } else {
-                        JOptionPane.showMessageDialog(PaymentPage.this, "PayPal Payment Failed.", "Payment Error", JOptionPane.ERROR_MESSAGE);
-                    }
+                    commandToExecute = new PayPalPaymentCommand(paymentProcessor, upgradeAmount, payPalEmail);
                 } else if (creditCardRadioButton.isSelected()) {
-                    paymentProcessor = new CreditCardAdapter(new CreditCardGateway());
-                    String ccNumber = cardOwnerField.getText(); // Use cardOwnerField for Card Number
-                    String cvv = new String(cardNumberField.getPassword()); // Use cardNumberField (JPasswordField) for CVV
-
-                    // You'll need more fields for expiry date in a real scenario.
+                    paymentProcessor = new CreditCardAdapter(new CreditCardGateway()); // Initialize the paymentProcessor
+                    String ccNumber = cardOwnerField.getText();
+                    String cvv = new String(cardNumberField.getPassword());
                     String expiryDate = "12/25"; // Placeholder, ideally from another UI field
 
                     if (ccNumber.isEmpty() || cvv.isEmpty()) {
                         JOptionPane.showMessageDialog(PaymentPage.this, "Card number and CVV cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
-                    if (paymentProcessor.processPayment(upgradeAmount, currentUserEmail, ccNumber, expiryDate, cvv)) {
-                        upgradeUser();
-                    } else {
-                        JOptionPane.showMessageDialog(PaymentPage.this, "Credit Card Payment Failed.", "Payment Error", JOptionPane.ERROR_MESSAGE);
-                    }
+                    commandToExecute = new CreditCardPaymentCommand(paymentProcessor, upgradeAmount, currentUserEmail, ccNumber, expiryDate, cvv);
                 } else {
                      JOptionPane.showMessageDialog(PaymentPage.this, "Please select a payment method.", "Payment Error", JOptionPane.WARNING_MESSAGE);
                      return;
+                }
+
+                if (commandToExecute != null) {
+                    if (commandToExecute.execute()) {
+                        upgradeUser();
+                    } else {
+                        // Show specific error message based on which payment method failed
+                        if (payPalRadioButton.isSelected()) {
+                            JOptionPane.showMessageDialog(PaymentPage.this, "PayPal Payment Failed.", "Payment Error", JOptionPane.ERROR_MESSAGE);
+                        } else if (creditCardRadioButton.isSelected()) {
+                            JOptionPane.showMessageDialog(PaymentPage.this, "Credit Card Payment Failed.", "Payment Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
                 }
             }
         });
