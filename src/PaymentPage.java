@@ -9,10 +9,11 @@ public class PaymentPage extends JFrame {
     private JTextField textField1;
     private JRadioButton payPalRadioButton;
     private JRadioButton cashRadioButton;
+    private JPanel Payment;
 
     public PaymentPage() {
         setTitle("Payment Page");
-        setContentPane(mainPanel);  // This comes from the .form file
+        setContentPane(Payment);  // This comes from the .form file
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(600, 400);
         setLocationRelativeTo(null);

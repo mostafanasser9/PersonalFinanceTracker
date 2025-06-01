@@ -146,6 +146,19 @@ public class Dashboard {
             });
         }
 
+        // Action listener for Upgrade button
+        if (upgradeButton != null) {
+            upgradeButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    // Open PaymentPage
+                    new PaymentPage();
+                    // Optionally, you might want to close or hide the dashboard
+                    // frame.dispose(); // or frame.setVisible(false);
+                }
+            });
+        }
+
 
         frame.setContentPane(panel1); // Set panel1 (from .form) as the content pane
         frame.pack();
