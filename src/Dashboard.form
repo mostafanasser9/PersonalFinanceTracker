@@ -1,13 +1,176 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="Dashboard">
-  <grid id="27dc6" row-count="1" column-count="1" layout-manager="GridLayoutManager">
-    <margin top="0" left="0" bottom="0" right="0"/>
+  <grid id="27dc6" binding="panel1" default-binding="true" layout-manager="GridLayoutManager" row-count="5" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+    <margin top="10" left="10" bottom="10" right="10"/>
     <constraints>
-      <xy x="20" y="20" width="500" height="400"/>
-      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+      <xy x="20" y="20" width="800" height="600"/>
     </constraints>
-    <properties/>
-    <border type="none"/>
-    <children/>
+    <properties>
+      <background color="-1"/>
+      <font name="Roboto" style="0"/>
+    </properties>
+    <border type="none" title="Dashboard"/>
+    <children>
+      <component id="d1e8f" class="javax.swing.JLabel">
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <font name="Roboto" size="24" style="1"/>
+          <foreground color="-16777216"/>
+          <text value="Personal Finance Dashboard"/>
+        </properties>
+      </component>
+      <grid id="a2b3c" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="true" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="5" left="0" bottom="5" right="0"/>
+        <constraints>
+          <grid row="1" column="0" row-span="1" col-span="4" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <background color="-1"/>
+        </properties>
+        <border type="none"/>
+        <children>
+          <component id="c4d5e" class="javax.swing.JButton" binding="listViewButton">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <background color="-9058561"/>
+              <enabled value="true"/>
+              <font name="Roboto" style="1"/>
+              <foreground color="-1"/>
+              <text value="List View"/>
+            </properties>
+          </component>
+          <component id="e6f7g" class="javax.swing.JButton" binding="gridViewButton">
+            <constraints>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <background color="-9058561"/>
+              <enabled value="true"/>
+              <font name="Roboto" style="1"/>
+              <foreground color="-1"/>
+              <text value="Grid View"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <grid id="viewSwitchPanelHost" binding="viewSwitchPanel" layout-manager="CardLayout" hgap="0" vgap="0">
+        <constraints>
+          <grid row="2" column="0" row-span="1" col-span="4" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
+            <preferred-size width="-1" height="300"/>
+          </grid>
+        </constraints>
+        <properties>
+          <background color="-1"/>
+        </properties>
+        <border type="none"/>
+        <children>
+          <scrollpane id="b9c8d" binding="scrollPane">
+            <constraints>
+              <card name="listViewCard"/>
+            </constraints>
+            <properties>
+              <background color="-2295809"/>
+            </properties>
+            <border type="none"/>
+            <children>
+              <component id="a7b6c" class="javax.swing.JTable" binding="dataTable">
+                <constraints/>
+                <properties>
+                  <background color="-1"/>
+                  <font name="Roboto"/>
+                </properties>
+              </component>
+            </children>
+          </scrollpane>
+          <grid id="gridViewHost" binding="gridViewContainerPanel" layout-manager="BorderLayout">
+            <constraints>
+              <card name="gridViewCard"/>
+            </constraints>
+            <properties>
+              <background color="-1118482"/>
+            </properties>
+            <border type="none"/>
+            <children>
+            </children>
+          </grid>
+        </children>
+      </grid>
+      <grid id="f1e2d" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="5" left="0" bottom="5" right="0"/>
+        <constraints>
+          <grid row="3" column="0" row-span="1" col-span="4" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <background color="-1"/>
+        </properties>
+        <border type="none"/>
+        <children>
+          <component id="g3h4i" class="javax.swing.JButton" binding="addButton">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <background color="-9058561"/>
+              <enabled value="true"/>
+              <font name="Roboto" style="1"/>
+              <foreground color="-1"/>
+              <text value="Add Item"/>
+            </properties>
+          </component>
+          <component id="i5j6k" class="javax.swing.JButton" binding="deleteButton">
+            <constraints>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <background color="-9058561"/>
+              <enabled value="true"/>
+              <font name="Roboto" style="1"/>
+              <foreground color="-1"/>
+              <text value="Delete Item"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <grid id="c9d8e" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="true" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="5" left="0" bottom="0" right="0"/>
+        <constraints>
+          <grid row="4" column="0" row-span="1" col-span="4" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <background color="-1"/>
+        </properties>
+        <border type="none"/>
+        <children>
+          <component id="m1n2o" class="javax.swing.JButton" binding="upgradeButton">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <background color="-9058561"/>
+              <enabled value="true"/>
+              <font name="Roboto" style="1"/>
+              <foreground color="-1"/>
+              <text value="Upgrade to Premium"/>
+            </properties>
+          </component>
+          <component id="p3q4r" class="javax.swing.JButton" binding="viewLogsButton">
+            <constraints>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <background color="-9058561"/>
+              <enabled value="true"/>
+              <font name="Roboto" style="1"/>
+              <foreground color="-1"/>
+              <text value="View History Logs"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+    </children>
   </grid>
 </form>

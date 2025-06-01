@@ -1,11 +1,16 @@
-import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.*;
 
 public class LoginPage {
     private JPanel panel1;
     private JTextField textField1;
     private JPasswordField passwordField1;
     private JButton LOGINButton;
+    private JLabel registerLabel; // Added for the new label
     private JFrame frame;
     public LoginPage(){
         frame = new JFrame("Login Page");
@@ -13,9 +18,47 @@ public class LoginPage {
         frame.setPreferredSize(new Dimension(600, 400));
         frame.setResizable(false);
         // Add Panels
-        frame.add(panel1);
+        frame.setContentPane(panel1); // Use setContentPane for the main panel
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+
+        // Add ActionListener to LOGINButton
+        if (LOGINButton != null) {
+            LOGINButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    // Open Dashboard
+                    new Dashboard();
+                    // Close current LoginPage
+                    frame.dispose();
+                }
+            });
+        } else {
+            // System.err.println("Warning: LOGINButton is null in LoginPage constructor. Check form binding.");
+        }
+
+        // Add MouseListener to registerLabel
+        registerLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                // Open SignupPage
+                new SignupPage();
+                // Close current LoginPage
+                frame.dispose();
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                registerLabel.setText("<html><u>Don't have an account? Register</u></html>");
+                registerLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                registerLabel.setText("Don't have an account? Register");
+                registerLabel.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+            }
+        });
     }
 }
