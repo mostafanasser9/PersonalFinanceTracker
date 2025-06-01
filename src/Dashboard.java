@@ -1,11 +1,16 @@
+import PersonalFinanceTracker.DisplayableTransaction;
+import PersonalFinanceTracker.FlaggedTransaction;
+import PersonalFinanceTracker.TransactionDecorator;
 import java.awt.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.*; // Added for custom cell rendering
+import javax.swing.border.EmptyBorder; // Corrected import
+import javax.swing.table.DefaultTableCellRenderer; // Corrected import
+import javax.swing.table.DefaultTableModel; // Corrected import
+
 
 public class Dashboard {
     private JPanel panel1; // Main panel from .form
@@ -18,6 +23,7 @@ public class Dashboard {
     private JButton duplicateButton; // New button for duplicating transactions
     private JButton upgradeButton;
     private JButton historyLogButton; // New button for History Log
+    private JButton flagTransactionButton; // New button for flagging transactions
     private JFrame frame;
 
     // Fields for CardLayout components bound from .form
@@ -25,8 +31,8 @@ public class Dashboard {
     private JPanel gridViewContainerPanel; // The panel for grid view content, this is "gridViewCard"
 
     private DefaultTableModel tableModel;
-    // Store Transaction objects directly
-    private ArrayList<Transaction> transactions;
+    // Store DisplayableTransaction objects directly
+    private ArrayList<DisplayableTransaction> transactions; // Changed from Transaction to DisplayableTransaction
     private final String[] columnNames = {"Date", "Description", "Category", "Amount", "Type"}; // Added Type
 
     public Dashboard() {
@@ -41,13 +47,14 @@ public class Dashboard {
         tableModel = new DefaultTableModel(null, columnNames) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // Make table cells non-editable
                 return false;
             }
         };
         
-        if (dataTable != null) { // dataTable is bound from .form
+        if (dataTable != null) {
             dataTable.setModel(tableModel);
+            // Add custom renderer for background colors
+            dataTable.setDefaultRenderer(Object.class, new TransactionTableCellRenderer());
         }
 
         // Load initial sample data
@@ -85,7 +92,6 @@ public class Dashboard {
                 JTextField descriptionField = new JTextField();
                 JTextField categoryField = new JTextField();
                 JTextField amountField = new JTextField();
-                // Adding a combo box for Type (Income/Expense)
                 JComboBox<String> typeComboBox = new JComboBox<>(new String[]{"Expense", "Income"});
 
                 Object[] message = {
@@ -114,17 +120,14 @@ public class Dashboard {
                         Date date = sdf.parse(dateStr);
                         double amount = Double.parseDouble(amountStr);
 
-                        // Use TransactionBuilder
                         Transaction newTransaction = new Transaction.TransactionBuilder(description, amount)
                                 .date(date)
                                 .category(category)
                                 .type(type)
                                 .build();
                         
-                        transactions.add(newTransaction);
-                        refreshViews(); // Refresh both table and grid view
-
-                        // System.out.println("LOG: Transaction Added - " + newTransaction.toString());
+                        transactions.add(newTransaction); // Add as DisplayableTransaction
+                        refreshViews(); 
                         HistoryLogger.getInstance().addLog("Transaction Added: " + newTransaction.getDescription() + " $" + newTransaction.getAmount());
                         JOptionPane.showMessageDialog(frame, "Transaction added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                     } catch (ParseException ex) {
@@ -144,8 +147,9 @@ public class Dashboard {
                 int selectedRow = dataTable.getSelectedRow();
                 if (selectedRow >= 0) {
                     int modelRow = dataTable.convertRowIndexToModel(selectedRow);
-                    Transaction toDelete = transactions.get(modelRow);
-                    handleDeleteTransaction(toDelete);
+                    // Get the DisplayableTransaction for deletion
+                    DisplayableTransaction toDelete = transactions.get(modelRow);
+                    handleDeleteTransaction(toDelete); // Pass DisplayableTransaction
                 } else {
                     JOptionPane.showMessageDialog(frame, "Please select a transaction from the list to delete.", "No Selection", JOptionPane.WARNING_MESSAGE);
                 }
@@ -158,10 +162,24 @@ public class Dashboard {
                 int selectedRow = dataTable.getSelectedRow();
                 if (selectedRow >= 0) {
                     int modelRow = dataTable.convertRowIndexToModel(selectedRow);
-                    Transaction originalTransaction = transactions.get(modelRow);
-                    handleDuplicateTransaction(originalTransaction);
+                    DisplayableTransaction originalTransaction = transactions.get(modelRow);
+                    handleDuplicateTransaction(originalTransaction); // Pass DisplayableTransaction
                 } else {
                     JOptionPane.showMessageDialog(frame, "Please select a transaction from the list to duplicate.", "No Selection", JOptionPane.WARNING_MESSAGE);
+                }
+            });
+        }
+        
+        // Action listener for Flag Transaction button
+        if (flagTransactionButton != null) {
+            flagTransactionButton.addActionListener(e -> {
+                int selectedRow = dataTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    int modelRow = dataTable.convertRowIndexToModel(selectedRow);
+                    DisplayableTransaction transactionToFlag = transactions.get(modelRow);
+                    handleFlagTransaction(modelRow, transactionToFlag);
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Please select a transaction from the list to flag.", "No Selection", JOptionPane.WARNING_MESSAGE);
                 }
             });
         }
@@ -200,7 +218,7 @@ public class Dashboard {
         frame.setVisible(true);
     }
 
-    private void handleDeleteTransaction(Transaction transactionToDelete) {
+    private void handleDeleteTransaction(DisplayableTransaction transactionToDelete) { // Parameter changed to DisplayableTransaction
         if (transactionToDelete == null) return;
 
         int confirm = JOptionPane.showConfirmDialog(frame,
@@ -211,25 +229,46 @@ public class Dashboard {
                 JOptionPane.WARNING_MESSAGE);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            transactions.remove(transactionToDelete); // Remove from our list
-            refreshViews(); // Refresh both table and grid view
-            // System.out.println("LOG: Transaction Deleted - " + transactionToDelete.toString());
+            transactions.remove(transactionToDelete);
+            refreshViews();
             HistoryLogger.getInstance().addLog("Transaction Deleted: " + transactionToDelete.getDescription() + " $" + transactionToDelete.getAmount());
             JOptionPane.showMessageDialog(frame, "Transaction deleted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
-    private void handleDuplicateTransaction(Transaction originalTransaction) {
+    private void handleDuplicateTransaction(DisplayableTransaction originalTransaction) { // Parameter changed
         if (originalTransaction == null) return;
 
-        Transaction clonedTransaction = originalTransaction.clone();
+        // Use cloneTransaction from DisplayableTransaction for proper cloning of decorators if any
+        DisplayableTransaction clonedDisplayable = originalTransaction.cloneTransaction();
 
-        JTextField dateField = new JTextField(new SimpleDateFormat("yyyy-MM-dd").format(clonedTransaction.getDate()));
-        JTextField descriptionField = new JTextField(clonedTransaction.getDescription());
-        JTextField categoryField = new JTextField(clonedTransaction.getCategory());
-        JTextField amountField = new JTextField(String.valueOf(clonedTransaction.getAmount()));
+        // We need a Transaction to pre-fill fields, so if it's a decorator, get the base
+        Transaction transactionToEdit;
+        if (clonedDisplayable instanceof TransactionDecorator) {
+            DisplayableTransaction current = clonedDisplayable;
+            while (current instanceof TransactionDecorator) {
+                current = ((TransactionDecorator) current).getDecoratedTransaction(); // Use getter
+            }
+            if (current instanceof Transaction) {
+                transactionToEdit = (Transaction) current;
+            } else {
+                 JOptionPane.showMessageDialog(frame, "Cannot determine original transaction type for duplication.", "Error", JOptionPane.ERROR_MESSAGE);
+                 return; // Or handle differently
+            }
+        } else if (clonedDisplayable instanceof Transaction) {
+            transactionToEdit = (Transaction) clonedDisplayable;
+        } else {
+            JOptionPane.showMessageDialog(frame, "Unsupported transaction type for duplication.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+
+        JTextField dateField = new JTextField(new SimpleDateFormat("yyyy-MM-dd").format(transactionToEdit.getDate()));
+        JTextField descriptionField = new JTextField(transactionToEdit.getDescription());
+        JTextField categoryField = new JTextField(transactionToEdit.getCategory());
+        JTextField amountField = new JTextField(String.valueOf(transactionToEdit.getAmount()));
         JComboBox<String> typeComboBox = new JComboBox<>(new String[]{"Expense", "Income"});
-        typeComboBox.setSelectedItem(clonedTransaction.getType());
+        typeComboBox.setSelectedItem(transactionToEdit.getType());
 
         Object[] message = {
             "Edit Duplicated Transaction:",
@@ -258,15 +297,15 @@ public class Dashboard {
                 Date date = sdf.parse(dateStr);
                 double amount = Double.parseDouble(amountStr);
 
+                // Create a new base Transaction from the edited details
                 Transaction finalDuplicatedTransaction = new Transaction.TransactionBuilder(description, amount)
                         .date(date)
                         .category(category)
                         .type(type)
                         .build();
                 
-                transactions.add(finalDuplicatedTransaction);
+                transactions.add(finalDuplicatedTransaction); // Add as DisplayableTransaction
                 refreshViews();
-                // System.out.println("LOG: Transaction Duplicated and Added - " + finalDuplicatedTransaction.toString());
                 HistoryLogger.getInstance().addLog("Transaction Duplicated: " + finalDuplicatedTransaction.getDescription() + " $" + finalDuplicatedTransaction.getAmount());
                 JOptionPane.showMessageDialog(frame, "Transaction duplicated and added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
             } catch (ParseException ex) {
@@ -279,8 +318,72 @@ public class Dashboard {
         }
     }
 
+    private void handleFlagTransaction(int modelRow, DisplayableTransaction transactionToFlag) {
+        if (transactionToFlag == null) return;
+
+        if (transactionToFlag instanceof FlaggedTransaction) {
+            Object[] options = {"Unflag", "Change Color", "Cancel"};
+            int choice = JOptionPane.showOptionDialog(frame,
+                    "This transaction is already flagged. What would you like to do?",
+                    "Flag Options",
+                    JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null, options, options[2]);
+
+            if (choice == JOptionPane.YES_OPTION) { // Unflag
+                DisplayableTransaction original = transactionToFlag;
+                while (original instanceof TransactionDecorator) {
+                    original = ((TransactionDecorator) original).getDecoratedTransaction(); // Use getter
+                }
+                transactions.set(modelRow, original);
+                HistoryLogger.getInstance().addLog("Transaction Unflagged: " + original.getDescription());
+                refreshViews();
+                return;
+            } else if (choice == JOptionPane.NO_OPTION) { // Change Color
+                // Proceed to color choice, effectively unwrap then re-wrap with new color
+            } else { // Cancel or closed
+                return;
+            }
+        }
+
+        String[] colors = {"Brown", "Red"};
+        String chosenColorName = (String) JOptionPane.showInputDialog(frame,
+                "Choose a flag color:",
+                "Flag Transaction",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                colors,
+                colors[0]);
+
+        if (chosenColorName != null) {
+            Color flagColor;
+            if ("Red".equals(chosenColorName)) {
+                flagColor = Color.RED;
+            } else { // Brown
+                flagColor = new Color(150, 75, 0); // Hex: #964B00
+            }
+
+            DisplayableTransaction baseTransaction = transactionToFlag;
+            // If it was already flagged (e.g. changing color), unwrap to the actual base transaction
+            if (baseTransaction instanceof TransactionDecorator) { // More general check for any decorator
+                 DisplayableTransaction current = baseTransaction;
+                 while (current instanceof TransactionDecorator) {
+                    current = ((TransactionDecorator) current).getDecoratedTransaction(); // Use getter
+                 }
+                 baseTransaction = current;
+            }
+
+            FlaggedTransaction flagged = new FlaggedTransaction(baseTransaction, flagColor);
+            transactions.set(modelRow, flagged);
+            refreshViews();
+            HistoryLogger.getInstance().addLog("Transaction Flagged "+ chosenColorName + ": " + flagged.getDescription());
+            JOptionPane.showMessageDialog(frame, "Transaction flagged successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+
     private void loadSampleTransactions() {
-        // Sample data using Transaction objects
+        // Sample data using Transaction objects (which implement DisplayableTransaction)
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
             transactions.add(new Transaction.TransactionBuilder("Groceries", 50.00).date(sdf.parse("2024-05-01")).category("Food").type("Expense").build());
@@ -294,17 +397,16 @@ public class Dashboard {
     }
 
     private void refreshTable() {
-        // Clear existing rows
         tableModel.setRowCount(0);
-        // Populate table from transactions list
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        for (Transaction t : transactions) {
+        for (DisplayableTransaction t : transactions) { // Iterate over DisplayableTransaction
             tableModel.addRow(new Object[]{
                 sdf.format(t.getDate()),
                 t.getDescription(),
                 t.getCategory(),
                 t.getAmount(),
                 t.getType()
+                // Color will be handled by the cell renderer
             });
         }
     }
@@ -320,7 +422,7 @@ public class Dashboard {
             System.err.println("gridViewContainerPanel is null, cannot populate grid view.");
             return;
         }
-        if (transactions == null) { // Check transactions list
+        if (transactions == null) {
             System.err.println("transactions list is null, cannot populate grid view.");
             return;
         }
@@ -331,12 +433,12 @@ public class Dashboard {
         JPanel actualGridHolder = new JPanel();
         
         int numItems = transactions.size();
-
         int numColumns = 2; 
         int numRows = (numItems == 0) ? 1 : (int) Math.ceil((double) numItems / numColumns);
         
         actualGridHolder.setLayout(new GridLayout(numRows, numColumns, 10, 10)); 
         actualGridHolder.setBorder(new EmptyBorder(10, 10, 10, 10)); 
+        // Keep original background for the holder, individual cards will get color
         actualGridHolder.setBackground(Color.decode("#E0E0E0")); 
 
         if (numItems == 0) {
@@ -346,14 +448,15 @@ public class Dashboard {
             actualGridHolder.add(emptyLabel, BorderLayout.CENTER);
         } else {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            for (Transaction t : transactions) {
-                final Transaction currentTransaction = t; // Make effectively final for lambda
+            for (DisplayableTransaction t : transactions) { // Iterate over DisplayableTransaction
+                final DisplayableTransaction currentTransaction = t; 
                 JPanel cardPanel = new JPanel(new BorderLayout(5, 5));
                 cardPanel.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(Color.GRAY, 1),
                     new EmptyBorder(10, 10, 10, 10) 
                 ));
-                cardPanel.setBackground(Color.WHITE);
+                // Set background color based on the transaction's display property
+                cardPanel.setBackground(t.getDisplayBackgroundColor()); 
 
                 JLabel descriptionLabel = new JLabel("<html><b>Desc:</b> " + t.getDescription() + "</html>");
                 JLabel categoryLabel = new JLabel("Category: " + t.getCategory());
@@ -366,15 +469,35 @@ public class Dashboard {
                 dateLabel.setFont(defaultFont);
                 amountLabel.setFont(new Font("Roboto", Font.BOLD, 13));
 
-                if ("Expense".equalsIgnoreCase(t.getType())) {
-                    amountLabel.setForeground(Color.RED);
-                } else if ("Income".equalsIgnoreCase(t.getType())) {
-                    amountLabel.setForeground(Color.GREEN.darker());
+                // Set text color based on type, but background is now from decorator
+                if (Color.WHITE.equals(t.getDisplayBackgroundColor())) { // Only apply if not flagged
+                    if ("Expense".equalsIgnoreCase(t.getType())) {
+                        amountLabel.setForeground(Color.RED);
+                    } else if ("Income".equalsIgnoreCase(t.getType())) {
+                        amountLabel.setForeground(Color.GREEN.darker());
+                    }
+                } else { // If flagged, ensure text is readable on colored background
+                    // Basic contrast: use black or white text
+                    // This is a simple heuristic, more advanced contrast calculation might be needed
+                    Color bgColor = t.getDisplayBackgroundColor();
+                    double luminance = (0.299 * bgColor.getRed() + 0.587 * bgColor.getGreen() + 0.114 * bgColor.getBlue()) / 255;
+                    if (luminance > 0.5) {
+                        amountLabel.setForeground(Color.BLACK);
+                        descriptionLabel.setForeground(Color.BLACK);
+                        categoryLabel.setForeground(Color.BLACK);
+                        dateLabel.setForeground(Color.BLACK);
+                    } else {
+                        amountLabel.setForeground(Color.WHITE);
+                        descriptionLabel.setForeground(Color.WHITE);
+                        categoryLabel.setForeground(Color.WHITE);
+                        dateLabel.setForeground(Color.WHITE);
+                    }
                 }
+
 
                 JPanel textPanel = new JPanel(); 
                 textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
-                textPanel.setBackground(Color.WHITE); 
+                textPanel.setOpaque(false); // Make text panel transparent to show cardPanel's background
                 textPanel.add(descriptionLabel);
                 textPanel.add(categoryLabel);
                 textPanel.add(dateLabel);
@@ -383,9 +506,8 @@ public class Dashboard {
 
                 cardPanel.add(textPanel, BorderLayout.CENTER);
 
-                // Panel for buttons
                 JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
-                buttonPanel.setBackground(Color.WHITE);
+                buttonPanel.setOpaque(false); // Make button panel transparent
 
                 JButton cardDuplicateButton = new JButton("Duplicate");
                 cardDuplicateButton.setFont(new Font("Roboto", Font.PLAIN, 10));
@@ -396,15 +518,35 @@ public class Dashboard {
                 cardDeleteButton.setFont(new Font("Roboto", Font.PLAIN, 10));
                 cardDeleteButton.setMargin(new Insets(2, 5, 2, 5));
                 cardDeleteButton.addActionListener(e -> handleDeleteTransaction(currentTransaction));
+                
+                // Add Flag button to grid items as well
+                JButton cardFlagButton = new JButton("Flag");
+                cardFlagButton.setFont(new Font("Roboto", Font.PLAIN, 10));
+                cardFlagButton.setMargin(new Insets(2, 5, 2, 5));
+                cardFlagButton.addActionListener(e -> {
+                    // Find the index of this transaction to pass to handleFlagTransaction
+                    int index = -1;
+                    for (int i = 0; i < transactions.size(); i++) {
+                        if (transactions.get(i) == currentTransaction) { // Use identity for decorated objects
+                            index = i;
+                            break;
+                        }
+                    }
+                    if (index != -1) {
+                        handleFlagTransaction(index, currentTransaction);
+                    }
+                });
+
 
                 buttonPanel.add(cardDuplicateButton);
                 buttonPanel.add(cardDeleteButton);
+                buttonPanel.add(cardFlagButton); // Add flag button to card
                 
                 cardPanel.add(buttonPanel, BorderLayout.SOUTH);
                 
                 actualGridHolder.add(cardPanel);
             }
-            
+            // Fill empty cells in the grid
             if (actualGridHolder.getLayout() instanceof GridLayout) {
                  int totalCells = numRows * numColumns;
                  for (int i = numItems; i < totalCells; i++) {
@@ -414,7 +556,7 @@ public class Dashboard {
                 }
             }
         }
-
+        // ... (rest of grid view setup)
         JScrollPane gridScrollPane = new JScrollPane(actualGridHolder);
         gridScrollPane.setBorder(BorderFactory.createEmptyBorder()); 
         gridScrollPane.getViewport().setBackground(actualGridHolder.getBackground());
@@ -422,6 +564,55 @@ public class Dashboard {
         gridViewContainerPanel.add(gridScrollPane, BorderLayout.CENTER);
         gridViewContainerPanel.revalidate();
         gridViewContainerPanel.repaint();
+    }
+
+    // Inner class for custom cell rendering in the JTable
+    class TransactionTableCellRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                     boolean isSelected, boolean hasFocus,
+                                                     int row, int column) {
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            
+            if (row < transactions.size()) { // Ensure row index is valid
+                DisplayableTransaction transaction = transactions.get(row);
+                Color backgroundColor = transaction.getDisplayBackgroundColor();
+                c.setBackground(backgroundColor);
+
+                // Adjust text color for better contrast if background is not white
+                if (!Color.WHITE.equals(backgroundColor)) {
+                    double luminance = (0.299 * backgroundColor.getRed() + 0.587 * backgroundColor.getGreen() + 0.114 * backgroundColor.getBlue()) / 255;
+                    if (luminance > 0.5) {
+                        c.setForeground(Color.BLACK); // Light background, dark text
+                    } else {
+                        c.setForeground(Color.WHITE); // Dark background, light text
+                    }
+                } else {
+                     // Reset to default foreground for non-flagged items if selected/not selected
+                    if (isSelected) {
+                        c.setForeground(table.getSelectionForeground());
+                    } else {
+                        c.setForeground(table.getForeground());
+                    }
+                }
+            } else {
+                // Default background for rows out of bounds (should not happen with correct model updates)
+                c.setBackground(table.getBackground());
+                c.setForeground(table.getForeground());
+            }
+            
+            // Handle selection color
+            if (isSelected) {
+                if (!Color.WHITE.equals(c.getBackground())) { // If it's a custom background
+                     // Blend selection with custom background or use a distinct selection color
+                    c.setBackground(c.getBackground().darker()); // Example: darken custom background
+                } else {
+                    c.setBackground(table.getSelectionBackground()); // Default selection background
+                }
+            }
+
+            return c;
+        }
     }
 
     // TODO: Add methods for data management, viewLogsButton action listeners etc.

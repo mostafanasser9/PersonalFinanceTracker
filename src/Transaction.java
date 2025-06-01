@@ -1,7 +1,9 @@
-import java.util.Date;
+import PersonalFinanceTracker.DisplayableTransaction;
+import java.awt.Color; // Import Color
+import java.util.Date; // Import the interface
 
 // Prototype and Builder Pattern
-public class Transaction implements Cloneable {
+public class Transaction implements DisplayableTransaction, Cloneable { // Implement DisplayableTransaction
     // Attributes of a transaction
     private final Date date;
     private final String description;
@@ -19,22 +21,27 @@ public class Transaction implements Cloneable {
     }
 
     // Getters
+    @Override
     public Date getDate() {
         return date;
     }
 
+    @Override
     public String getDescription() {
         return description;
     }
 
+    @Override
     public String getCategory() {
         return category;
     }
 
+    @Override
     public double getAmount() {
         return amount;
     }
 
+    @Override
     public String getType() {
         return type;
     }
@@ -54,16 +61,22 @@ public class Transaction implements Cloneable {
     @Override
     public Transaction clone() {
         try {
-            // Perform a shallow copy, which is fine for immutable fields (String, double)
-            // and Date (Date is mutable, so for a true deep clone, Date should also be cloned if modified after creation)
             Transaction cloned = (Transaction) super.clone();
-            // If Date was mutable and could be changed post-construction, you'd do:
-            // cloned.date = (Date) this.date.clone();
             return cloned;
         } catch (CloneNotSupportedException e) {
-            // This should not happen since we are Cloneable
-            throw new AssertionError();
+            throw new AssertionError(); // Should not happen
         }
+    }
+
+    // Implementation for DisplayableTransaction
+    @Override
+    public DisplayableTransaction cloneTransaction() {
+        return this.clone(); // Use the existing clone method
+    }
+
+    @Override
+    public Color getDisplayBackgroundColor() {
+        return Color.WHITE; // Default background color for non-flagged transactions
     }
 
     // Builder Pattern: Static inner Builder class
@@ -95,7 +108,6 @@ public class Transaction implements Cloneable {
             return this;
         }
         
-        // Optional: Set all fields at once if coming from a prototype
         public TransactionBuilder fromTransaction(Transaction transaction) {
             this.date = transaction.date;
             this.description = transaction.description;
@@ -106,14 +118,11 @@ public class Transaction implements Cloneable {
         }
 
         public Transaction build() {
-            // Add any validation before creating the object if necessary
             if (description == null || description.trim().isEmpty()) {
                 throw new IllegalStateException("Description cannot be empty.");
             }
-            if (amount == 0 && type == null) { // Basic validation example
-                 this.type = "Neutral"; // Or throw error if amount is 0 for expense/income
-            } else if (type == null) {
-                this.type = amount < 0 ? "Expense" : "Income"; // Default type based on amount
+            if (type == null) {
+                this.type = amount < 0 ? "Expense" : "Income";
             }
             return new Transaction(this);
         }
