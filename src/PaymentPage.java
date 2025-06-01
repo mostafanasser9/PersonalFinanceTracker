@@ -1,2 +1,2 @@
-package PACKAGE_NAME;public class PaymentPage {
+package PersonalFinanceTracker; public class PaymentPage {
 }
