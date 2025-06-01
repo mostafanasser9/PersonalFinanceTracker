@@ -8,11 +8,12 @@ import javax.swing.*;
 public class SignupPage {
     private JTextField textField1;
     private JPanel panel1;
-    private JTextField textField2;
+    private JTextField textField2; // Assuming this is for username
     private JPasswordField passwordField1;
     private JButton SIGNUPButton;
     private JLabel loginLabel; // This should be bound in the .form file to the id "logLabel"
     private JFrame frame;
+    private UserManager userManager; // Add UserManager instance
 
     public SignupPage() {
         // Initialize and set up the frame
@@ -29,6 +30,8 @@ public class SignupPage {
         frame.pack();
         frame.setLocationRelativeTo(null); // Center on screen
         frame.setVisible(true);
+
+        userManager = UserManager.getInstance(); // Get UserManager instance
 
         // Ensure loginLabel is not null before adding a listener
         // This check is a safeguard; in a properly configured IntelliJ GUI form,
@@ -66,10 +69,24 @@ public class SignupPage {
             SIGNUPButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    // Open LoginPage
-                    new LoginPage();
-                    // Close current SignupPage frame
-                    frame.dispose();
+                    String username = textField2.getText(); // Assuming textField2 is for username
+                    String password = new String(passwordField1.getPassword());
+                    // You might want to add validation for email (textField1) and password strength here
+
+                    if (username.isEmpty() || password.isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "Username and password cannot be empty.", "Signup Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    if (userManager.registerUser(username, password)) {
+                        JOptionPane.showMessageDialog(frame, "Registration successful! Please login.", "Signup Success", JOptionPane.INFORMATION_MESSAGE);
+                        // Open LoginPage
+                        new LoginPage();
+                        // Close current SignupPage frame
+                        frame.dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(frame, "Username already exists. Please choose another one.", "Signup Failed", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             });
         } else {

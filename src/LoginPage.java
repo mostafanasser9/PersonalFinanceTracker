@@ -12,6 +12,8 @@ public class LoginPage {
     private JButton LOGINButton;
     private JLabel registerLabel; // Added for the new label
     private JFrame frame;
+    private UserManager userManager; // Add UserManager instance
+
     public LoginPage(){
         frame = new JFrame("Login Page");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -23,15 +25,23 @@ public class LoginPage {
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 
+        userManager = UserManager.getInstance(); // Get UserManager instance
+
         // Add ActionListener to LOGINButton
         if (LOGINButton != null) {
             LOGINButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    // Open Dashboard
-                    new Dashboard();
-                    // Close current LoginPage
-                    frame.dispose();
+                    String username = textField1.getText();
+                    String password = new String(passwordField1.getPassword());
+                    if (userManager.loginUser(username, password)) {
+                        // Open Dashboard
+                        new Dashboard();
+                        // Close current LoginPage
+                        frame.dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(frame, "Invalid username or password.", "Login Failed", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             });
         } else {
