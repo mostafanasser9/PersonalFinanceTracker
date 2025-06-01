@@ -11,11 +11,12 @@ public class PaymentPage extends JFrame {
     private JRadioButton creditCardRadioButton;
     private JPanel Payment;
     private String currentUserEmail;
-    private PaymentProcessor paymentProcessor; // Use the adapter interface
+    private UserContext userContext; // Added UserContext
 
-    public PaymentPage(String userEmail) {
+    public PaymentPage(String userEmail, UserContext userContext) { // Modified constructor
         this.currentUserEmail = userEmail;
-        setTitle("Payment Page");
+        this.userContext = userContext; // Store UserContext
+        setTitle("Payment Page - " + currentUserEmail);
         setContentPane(Payment);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setSize(600, 400);
@@ -34,14 +35,14 @@ public class PaymentPage extends JFrame {
                 Command commandToExecute = null;
 
                 if (payPalRadioButton.isSelected()) {
-                    paymentProcessor = new PayPalAdapter(new PayPalGateway()); // Initialize the paymentProcessor
+                    PaymentProcessor paymentProcessor = new PayPalAdapter(new PayPalGateway()); // Initialize the paymentProcessor
                     String payPalEmail = cardOwnerField.getText();
                     if (payPalEmail.isEmpty()) {
                         payPalEmail = currentUserEmail; // Default to current user's email if field is empty
                     }
                     commandToExecute = new PayPalPaymentCommand(paymentProcessor, upgradeAmount, payPalEmail);
                 } else if (creditCardRadioButton.isSelected()) {
-                    paymentProcessor = new CreditCardAdapter(new CreditCardGateway()); // Initialize the paymentProcessor
+                    PaymentProcessor paymentProcessor = new CreditCardAdapter(new CreditCardGateway()); // Initialize the paymentProcessor
                     String ccNumber = cardOwnerField.getText();
                     String cvv = new String(cardNumberField.getPassword());
                     String expiryDate = "12/25"; // Placeholder, ideally from another UI field
@@ -58,7 +59,7 @@ public class PaymentPage extends JFrame {
 
                 if (commandToExecute != null) {
                     if (commandToExecute.execute()) {
-                        upgradeUser();
+                        handlePaymentSuccess();
                     } else {
                         // Show specific error message based on which payment method failed
                         if (payPalRadioButton.isSelected()) {
@@ -73,16 +74,17 @@ public class PaymentPage extends JFrame {
         setVisible(true);
     }
 
-    private void upgradeUser() {
-        UserManager userManager = UserManager.getInstance();
-        userManager.setUserRole(currentUserEmail, "premium");
-        HistoryLogger.getInstance().addLog("User " + currentUserEmail + " upgraded to premium.");
-        JOptionPane.showMessageDialog(PaymentPage.this, "Upgraded To Premium Successfully");
-        dispose();
+    private void handlePaymentSuccess() {
+        UserManager.getInstance().setUserRole(currentUserEmail, "premium");
+        if (this.userContext != null) {
+            this.userContext.refreshState(); // Notify UserContext to update its state
+        }
+        JOptionPane.showMessageDialog(this, "Payment successful! You are now a premium user.", "Payment Success", JOptionPane.INFORMATION_MESSAGE);
+        dispose(); // Close payment page
     }
 
     public static void main(String[] args) {
         // Example usage: Pass a dummy email or get it from a logged-in session
-        SwingUtilities.invokeLater(() -> new PaymentPage("test@example.com"));
+        SwingUtilities.invokeLater(() -> new PaymentPage("test@example.com", new UserContext("test@example.com", null)));
     }
 }

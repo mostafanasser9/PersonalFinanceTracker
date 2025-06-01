@@ -1,3 +1,4 @@
+test:test:premium
 alylol@gmail.com:1234:standard
 disha:disha:premium
 admin:admin:premium

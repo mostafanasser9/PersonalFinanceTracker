@@ -1,3 +1,4 @@
+
 import java.awt.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -22,6 +23,8 @@ public class Dashboard {
     private JButton flagTransactionButton;
     private JFrame frame;
     private String currentUserEmail;
+    private UserContext userContext; // Added UserContext
+    private JLabel accountStatusLabel; // Added for displaying account status
 
     private JPanel viewSwitchPanel; // The panel with CardLayout, bound from .form
     // gridViewContainerPanel should be the actual JPanel used for the grid view card.
@@ -41,6 +44,7 @@ public class Dashboard {
 
     public Dashboard(String userEmail) {
         this.currentUserEmail = userEmail;
+        this.userContext = new UserContext(currentUserEmail, this); // Initialize UserContext
         this.transactionManager = new TransactionManagerFacade();
 
         // Initialize JFrame
@@ -50,7 +54,22 @@ public class Dashboard {
         // viewSwitchPanel, in turn, should contain scrollPane (as listViewCard)
         // and gridViewContainerPanel (as gridViewCard).
         // This setup is typically done in the .form file or its generated $$$setupUI$$$().
-        frame.setContentPane(panel1);
+        frame.setContentPane(panel1); // panel1 should be the main content pane from your .form
+        
+        // Initialize accountStatusLabel and add it to the frame (e.g., to panel1 or a specific part of it)
+        accountStatusLabel = new JLabel("Account Type: " + userContext.getAccountTypeName());
+        // Example: Add to a specific part of panel1, assuming panel1 uses BorderLayout
+        // You might need to adjust this based on your panel1's layout manager
+        if (panel1 != null) { // Ensure panel1 is initialized (from .form)
+            // If panel1 is the main content pane and uses BorderLayout or similar:
+            // panel1.add(accountStatusLabel, BorderLayout.NORTH); 
+            // Or, if you have a dedicated status bar panel within panel1:
+            // someStatusBarPanel.add(accountStatusLabel);
+            // For simplicity, if panel1 is a simple JPanel, just add it.
+            // This might need adjustment based on how panel1 is structured in Dashboard.form
+        }
+
+
         frame.setPreferredSize(new Dimension(900, 700));
 
         // Ensure components from .form are initialized before use.
@@ -80,6 +99,17 @@ public class Dashboard {
 
         // Setup Strategies
         listViewStrategy = new ListViewStrategy(dataTable, viewSwitchPanel, LIST_VIEW_CARD_NAME);
+        // Ensure gridViewContainerPanel is properly initialized before passing to GridViewStrategy
+        if (gridViewContainerPanel == null) {
+            // This indicates gridViewContainerPanel was not correctly bound from the .form
+            // Or it's not being created before this point if done manually.
+            // For now, let's create a new one to avoid NullPointerException,
+            // but this should be properly handled by the .form or its setup.
+            gridViewContainerPanel = new JPanel(); 
+            if (viewSwitchPanel != null) { // Add it to the card layout if viewSwitchPanel exists
+                viewSwitchPanel.add(gridViewContainerPanel, GRID_VIEW_CARD_NAME);
+            }
+        }
         gridViewStrategy = new GridViewStrategy(gridViewContainerPanel, viewSwitchPanel, GRID_VIEW_CARD_NAME);
 
         currentViewStrategy = listViewStrategy; // Default to list view
@@ -145,7 +175,16 @@ public class Dashboard {
         if(deleteButton != null) deleteButton.addActionListener(e -> deleteTransaction());
         if(duplicateButton != null) duplicateButton.addActionListener(e -> duplicateTransaction());
         if(flagTransactionButton != null) flagTransactionButton.addActionListener(e -> flagTransactionDialog());
-        if(upgradeButton != null) upgradeButton.addActionListener(e -> openPaymentPage());
+        if(upgradeButton != null) upgradeButton.addActionListener(e -> {
+            if (userContext != null) {
+                userContext.attemptUpgrade(frame);
+            } else {
+                // Fallback, though userContext should be initialized
+                System.err.println("UserContext not initialized in Dashboard. Opening payment page directly.");
+                // Passing null for UserContext if it's not available, though this path should ideally not be hit.
+                new PaymentPage(currentUserEmail, null).setVisible(true); 
+            }
+        });
         if(historyLogButton != null) historyLogButton.addActionListener(e -> openHistoryLogPage());
     }
 
@@ -275,36 +314,47 @@ public class Dashboard {
     }
 
     private void flagTransactionDialog() {
-        DisplayableTransaction transactionToFlag = getSelectedTransactionForModification("flag/unflag");
+        final DisplayableTransaction transactionToFlag = getSelectedTransactionForModification("flag/unflag");
         if (transactionToFlag == null) return;
 
-        int modelRow = -1;
+        // Determine modelRow upfront.
+        final int modelRow;
         ArrayList<DisplayableTransaction> allTransactions = transactionManager.getTransactions();
+        int foundModelRow = -1;
         for (int i = 0; i < allTransactions.size(); i++) {
-            if (allTransactions.get(i).equals(transactionToFlag) || 
-               (allTransactions.get(i).getDescription().equals(transactionToFlag.getDescription()) &&
-                allTransactions.get(i).getAmount() == transactionToFlag.getAmount() &&
-                allTransactions.get(i).getDate().equals(transactionToFlag.getDate())) 
-            ) {
-                modelRow = i;
+            DisplayableTransaction currentLoopTransaction = allTransactions.get(i);
+            // Robust comparison, assuming .equals() or attribute check is sufficient
+            // This check was part of the original logic.
+            if (currentLoopTransaction.equals(transactionToFlag) ||
+               (currentLoopTransaction.getDescription().equals(transactionToFlag.getDescription()) &&
+                currentLoopTransaction.getAmount() == transactionToFlag.getAmount() &&
+                currentLoopTransaction.getDate().equals(transactionToFlag.getDate()))) {
+                foundModelRow = i;
                 break;
             }
         }
 
-        if (modelRow == -1) {
+        if (foundModelRow == -1) {
              JOptionPane.showMessageDialog(frame, "Could not identify the selected transaction's position.", "Error", JOptionPane.ERROR_MESSAGE);
              return;
         }
+        modelRow = foundModelRow; // Assign to final variable for use in lambda
 
-        TransactionFlaggingProxy flaggingProxy = new TransactionFlaggingProxy(currentUserEmail, this);
-        boolean isCurrentlyFlagged = transactionToFlag.getDisplayBackgroundColor() != null &&
-                                   transactionToFlag.getDisplayBackgroundColor().equals(Color.ORANGE);
+        Runnable doFlaggingLogic = () -> {
+            // modelRow and transactionToFlag are from the outer scope and effectively final.
+            TransactionFlaggingProxy flaggingProxy = new TransactionFlaggingProxy(currentUserEmail, this);
+            boolean isCurrentlyFlagged = transactionToFlag.getDisplayBackgroundColor() != null &&
+                                       transactionToFlag.getDisplayBackgroundColor().equals(Color.ORANGE);
 
-        if (isCurrentlyFlagged) {
-            flaggingProxy.unflagTransaction(modelRow, transactionToFlag);
-        } else {
-            flaggingProxy.flagTransaction(modelRow, transactionToFlag, Color.ORANGE);
-        }
+            if (isCurrentlyFlagged) {
+                flaggingProxy.unflagTransaction(modelRow, transactionToFlag);
+            } else {
+                flaggingProxy.flagTransaction(modelRow, transactionToFlag, Color.ORANGE);
+            }
+        };
+
+        // UserContext handles whether to execute doFlaggingLogic or show premium message
+        userContext.attemptFlagTransaction(frame, doFlaggingLogic);
     }
 
     public void updateTransactionInList(int modelRow, DisplayableTransaction transaction) {
@@ -316,8 +366,21 @@ public class Dashboard {
         loadTransactions();
     }
 
+    // Method for UserContext to call to update UI
+    public void updateAccountStatusLabel(String accountType) {
+        if (accountStatusLabel != null) {
+            accountStatusLabel.setText("Account Type: " + accountType);
+        }
+        // Potentially refresh other UI elements that depend on account status
+        // For example, enable/disable buttons, change colors, etc.
+        // This might also be a good place to call loadTransactions() if the view
+        // needs to change based on account type (e.g. premium features in the list/grid)
+        // loadTransactions(); // Uncomment if views need to be re-rendered based on account type
+    }
+
     private void openPaymentPage() {
-        new PaymentPage(currentUserEmail); 
+        // Ensure UserContext is passed to PaymentPage
+        new PaymentPage(currentUserEmail, this.userContext).setVisible(true); 
     }
 
     private void openHistoryLogPage() {
