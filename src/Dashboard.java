@@ -1,10 +1,11 @@
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.border.EmptyBorder; // Added for card padding
-import java.util.Vector; // Added for table model data manipulation
 
 public class Dashboard {
     private JPanel panel1; // Main panel from .form
@@ -14,6 +15,7 @@ public class Dashboard {
     private JTable dataTable;
     private JButton addButton;
     private JButton deleteButton;
+    private JButton duplicateButton; // New button for duplicating transactions
     private JButton upgradeButton;
     private JButton viewLogsButton;
     private JFrame frame;
@@ -22,8 +24,10 @@ public class Dashboard {
     private JPanel viewSwitchPanel; // The panel with CardLayout
     private JPanel gridViewContainerPanel; // The panel for grid view content, this is "gridViewCard"
 
-    private DefaultTableModel tableModel; // Made tableModel a class field
-    private String[] columnNames = {"Date", "Description", "Category", "Amount"}; // Column names for the table
+    private DefaultTableModel tableModel;
+    // Store Transaction objects directly
+    private ArrayList<Transaction> transactions;
+    private final String[] columnNames = {"Date", "Description", "Category", "Amount", "Type"}; // Added Type
 
     public Dashboard() {
         frame = new JFrame("Dashboard");
@@ -31,83 +35,103 @@ public class Dashboard {
         frame.setPreferredSize(new Dimension(800, 600)); // As per .form
         frame.setResizable(false);
 
-        // viewSwitchPanel and gridViewContainerPanel are initialized by IntelliJ's form loader
-        // scrollPane is also initialized and is part of viewSwitchPanel as "listViewCard"
-        // gridViewContainerPanel is part of viewSwitchPanel as "gridViewCard"
+        transactions = new ArrayList<>(); // Initialize the list of transactions
 
-        // Initialize the table model with sample data
-        Object[][] initialData = {
-            {"2024-05-01", "Groceries", "Food", 50.00},
-            {"2024-05-03", "Gasoline", "Transport", 40.00},
-            {"2024-05-05", "Movie Tickets", "Entertainment", 30.00},
-            {"2024-05-06", "Books", "Education", 75.00},
-            {"2024-05-08", "Dinner Out", "Food", 60.00}
+        // Initialize the table model (empty at first)
+        tableModel = new DefaultTableModel(null, columnNames) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                // Make table cells non-editable
+                return false;
+            }
         };
-        tableModel = new DefaultTableModel(initialData, columnNames);
         
         if (dataTable != null) { // dataTable is bound from .form
             dataTable.setModel(tableModel);
         }
 
-        // Populate Grid View
-        populateGridView(); // Call method to populate grid view, now uses class tableModel
+        // Load initial sample data
+        loadSampleTransactions();
+        refreshViews(); // Initial population of table and grid
 
         // Action listener for List View button
         if (listViewButton != null) {
-            listViewButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    System.out.println("List View Clicked");
-                    if (viewSwitchPanel != null) {
-                        CardLayout cl = (CardLayout) (viewSwitchPanel.getLayout());
-                        cl.show(viewSwitchPanel, "listViewCard");
-                    }
+            listViewButton.addActionListener(e -> {
+                System.out.println("List View Clicked");
+                if (viewSwitchPanel != null) {
+                    CardLayout cl = (CardLayout) (viewSwitchPanel.getLayout());
+                    cl.show(viewSwitchPanel, "listViewCard");
                 }
             });
         }
 
         // Action listener for Grid View button
         if (gridViewButton != null) {
-            gridViewButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    System.out.println("Grid View Clicked");
-                    if (viewSwitchPanel != null) {
-                        populateGridView(); // Repopulate grid view in case data changed
-                        CardLayout cl = (CardLayout) (viewSwitchPanel.getLayout());
-                        cl.show(viewSwitchPanel, "gridViewCard");
-                    }
+            gridViewButton.addActionListener(e -> {
+                System.out.println("Grid View Clicked");
+                if (viewSwitchPanel != null) {
+                    populateGridView(); // Repopulate grid view in case data changed
+                    CardLayout cl = (CardLayout) (viewSwitchPanel.getLayout());
+                    cl.show(viewSwitchPanel, "gridViewCard");
                 }
             });
         }
 
         // Action listener for Add button
         if (addButton != null) {
-            addButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    // Prompt for transaction details
-                    String date = JOptionPane.showInputDialog(frame, "Enter Date (YYYY-MM-DD):", "Add Transaction", JOptionPane.PLAIN_MESSAGE);
-                    if (date == null || date.trim().isEmpty()) return; // User cancelled or entered empty
+            addButton.addActionListener(e -> {
+                // Prompt for transaction details
+                JTextField dateField = new JTextField();
+                JTextField descriptionField = new JTextField();
+                JTextField categoryField = new JTextField();
+                JTextField amountField = new JTextField();
+                // Adding a combo box for Type (Income/Expense)
+                JComboBox<String> typeComboBox = new JComboBox<>(new String[]{"Expense", "Income"});
 
-                    String description = JOptionPane.showInputDialog(frame, "Enter Description:", "Add Transaction", JOptionPane.PLAIN_MESSAGE);
-                    if (description == null || description.trim().isEmpty()) return;
+                Object[] message = {
+                    "Date (YYYY-MM-DD):", dateField,
+                    "Description:", descriptionField,
+                    "Category:", categoryField,
+                    "Amount:", amountField,
+                    "Type:", typeComboBox
+                };
 
-                    String category = JOptionPane.showInputDialog(frame, "Enter Category:", "Add Transaction", JOptionPane.PLAIN_MESSAGE);
-                    if (category == null || category.trim().isEmpty()) return;
+                int option = JOptionPane.showConfirmDialog(frame, message, "Add New Transaction", JOptionPane.OK_CANCEL_OPTION);
+                if (option == JOptionPane.OK_OPTION) {
+                    String dateStr = dateField.getText();
+                    String description = descriptionField.getText();
+                    String category = categoryField.getText();
+                    String amountStr = amountField.getText();
+                    String type = (String) typeComboBox.getSelectedItem();
 
-                    String amountStr = JOptionPane.showInputDialog(frame, "Enter Amount:", "Add Transaction", JOptionPane.PLAIN_MESSAGE);
-                    if (amountStr == null || amountStr.trim().isEmpty()) return;
+                    if (dateStr.trim().isEmpty() || description.trim().isEmpty() || category.trim().isEmpty() || amountStr.trim().isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "All fields must be filled.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
 
                     try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        Date date = sdf.parse(dateStr);
                         double amount = Double.parseDouble(amountStr);
-                        tableModel.addRow(new Object[]{date, description, category, amount});
-                        // JTable updates automatically. Grid view needs explicit refresh.
-                        populateGridView(); 
-                        System.out.println("LOG: Transaction Added - " + description + ", " + amount); // Placeholder log
+
+                        // Use TransactionBuilder
+                        Transaction newTransaction = new Transaction.TransactionBuilder(description, amount)
+                                .date(date)
+                                .category(category)
+                                .type(type)
+                                .build();
+                        
+                        transactions.add(newTransaction);
+                        refreshViews(); // Refresh both table and grid view
+
+                        System.out.println("LOG: Transaction Added - " + newTransaction.toString());
                         JOptionPane.showMessageDialog(frame, "Transaction added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    } catch (ParseException ex) {
+                        JOptionPane.showMessageDialog(frame, "Invalid date format. Please use YYYY-MM-DD.", "Input Error", JOptionPane.ERROR_MESSAGE);
                     } catch (NumberFormatException ex) {
                         JOptionPane.showMessageDialog(frame, "Invalid amount. Please enter a numeric value.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                    } catch (IllegalStateException ex) {
+                        JOptionPane.showMessageDialog(frame, ex.getMessage(), "Input Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
             });
@@ -115,47 +139,110 @@ public class Dashboard {
 
         // Action listener for Delete button
         if (deleteButton != null) {
-            deleteButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    int selectedRow = dataTable.getSelectedRow();
-                    if (selectedRow >= 0) {
-                        // Convert view row index to model row index in case of sorting/filtering
-                        int modelRow = dataTable.convertRowIndexToModel(selectedRow);
-                        
-                        String description = tableModel.getValueAt(modelRow, 1).toString();
-                        Object amount = tableModel.getValueAt(modelRow, 3);
+            deleteButton.addActionListener(e -> {
+                int selectedRow = dataTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    // Convert view row index to model row index in case of sorting/filtering
+                    int modelRow = dataTable.convertRowIndexToModel(selectedRow);
+                    
+                    Transaction toDelete = transactions.get(modelRow); // Get transaction from our list
 
-                        int confirm = JOptionPane.showConfirmDialog(frame, 
-                            "Are you sure you want to delete this transaction?\n" + description + " - $" + amount, 
-                            "Confirm Deletion", 
-                            JOptionPane.YES_NO_OPTION, 
-                            JOptionPane.WARNING_MESSAGE);
-                        
-                        if (confirm == JOptionPane.YES_OPTION) {
-                            tableModel.removeRow(modelRow);
-                            // JTable updates automatically. Grid view needs explicit refresh.
-                            populateGridView();
-                            System.out.println("LOG: Transaction Deleted - " + description + ", " + amount); // Placeholder log
-                            JOptionPane.showMessageDialog(frame, "Transaction deleted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(frame, "Please select a transaction from the list to delete.", "No Selection", JOptionPane.WARNING_MESSAGE);
+                    int confirm = JOptionPane.showConfirmDialog(frame, 
+                        "Are you sure you want to delete this transaction?\\n" + 
+                        toDelete.getDescription() + " - $" + String.format("%.2f", toDelete.getAmount()), 
+                        "Confirm Deletion", 
+                        JOptionPane.YES_NO_OPTION, 
+                        JOptionPane.WARNING_MESSAGE);
+                    
+                    if (confirm == JOptionPane.YES_OPTION) {
+                        transactions.remove(modelRow); // Remove from our list
+                        refreshViews(); // Refresh both table and grid view
+                        System.out.println("LOG: Transaction Deleted - " + toDelete.toString());
+                        JOptionPane.showMessageDialog(frame, "Transaction deleted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                     }
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Please select a transaction from the list to delete.", "No Selection", JOptionPane.WARNING_MESSAGE);
+                }
+            });
+        }
+
+        // Action listener for Duplicate button
+        if (duplicateButton != null) {
+            duplicateButton.addActionListener(e -> {
+                int selectedRow = dataTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    int modelRow = dataTable.convertRowIndexToModel(selectedRow);
+                    Transaction originalTransaction = transactions.get(modelRow);
+
+                    // Use the Prototype pattern's clone method
+                    Transaction clonedTransaction = originalTransaction.clone();
+
+                    // More interactive approach: Open dialog to edit the clone
+                    JTextField dateField = new JTextField(new SimpleDateFormat("yyyy-MM-dd").format(clonedTransaction.getDate()));
+                    JTextField descriptionField = new JTextField(clonedTransaction.getDescription());
+                    JTextField categoryField = new JTextField(clonedTransaction.getCategory());
+                    JTextField amountField = new JTextField(String.valueOf(clonedTransaction.getAmount()));
+                    JComboBox<String> typeComboBox = new JComboBox<>(new String[]{"Expense", "Income"});
+                    typeComboBox.setSelectedItem(clonedTransaction.getType());
+
+                    Object[] message = {
+                        "Edit Duplicated Transaction:",
+                        "Date (YYYY-MM-DD):", dateField,
+                        "Description:", descriptionField,
+                        "Category:", categoryField,
+                        "Amount:", amountField,
+                        "Type:", typeComboBox
+                    };
+
+                    int option = JOptionPane.showConfirmDialog(frame, message, "Duplicate Transaction", JOptionPane.OK_CANCEL_OPTION);
+                    if (option == JOptionPane.OK_OPTION) {
+                        String dateStr = dateField.getText();
+                        String description = descriptionField.getText();
+                        String category = categoryField.getText();
+                        String amountStr = amountField.getText();
+                        String type = (String) typeComboBox.getSelectedItem();
+
+                        if (dateStr.trim().isEmpty() || description.trim().isEmpty() || category.trim().isEmpty() || amountStr.trim().isEmpty()) {
+                            JOptionPane.showMessageDialog(frame, "All fields must be filled.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+
+                        try {
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                            Date date = sdf.parse(dateStr);
+                            double amount = Double.parseDouble(amountStr);
+
+                            Transaction finalDuplicatedTransaction = new Transaction.TransactionBuilder(description, amount)
+                                    .date(date)
+                                    .category(category)
+                                    .type(type)
+                                    .build();
+                            
+                            transactions.add(finalDuplicatedTransaction);
+                            refreshViews();
+                            System.out.println("LOG: Transaction Duplicated and Added - " + finalDuplicatedTransaction.toString());
+                            JOptionPane.showMessageDialog(frame, "Transaction duplicated and added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                        } catch (ParseException ex) {
+                            JOptionPane.showMessageDialog(frame, "Invalid date format. Please use YYYY-MM-DD.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                        } catch (NumberFormatException ex) {
+                            JOptionPane.showMessageDialog(frame, "Invalid amount. Please enter a numeric value.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                        } catch (IllegalStateException ex) {
+                            JOptionPane.showMessageDialog(frame, ex.getMessage(), "Input Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Please select a transaction from the list to duplicate.", "No Selection", JOptionPane.WARNING_MESSAGE);
                 }
             });
         }
 
         // Action listener for Upgrade button
         if (upgradeButton != null) {
-            upgradeButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    // Open PaymentPage
-                    new PaymentPage();
-                    // Optionally, you might want to close or hide the dashboard
-                    // frame.dispose(); // or frame.setVisible(false);
-                }
+            upgradeButton.addActionListener(e -> {
+                // Open PaymentPage
+                new PaymentPage();
+                // Optionally, you might want to close or hide the dashboard
+                // frame.dispose(); // or frame.setVisible(false);
             });
         }
 
@@ -175,13 +262,49 @@ public class Dashboard {
         frame.setVisible(true);
     }
 
-    private void populateGridView() { // Removed parameters, now uses class field tableModel
+    private void loadSampleTransactions() {
+        // Sample data using Transaction objects
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            transactions.add(new Transaction.TransactionBuilder("Groceries", 50.00).date(sdf.parse("2024-05-01")).category("Food").type("Expense").build());
+            transactions.add(new Transaction.TransactionBuilder("Salary", 2500.00).date(sdf.parse("2024-05-01")).category("Income").type("Income").build());
+            transactions.add(new Transaction.TransactionBuilder("Gasoline", 40.00).date(sdf.parse("2024-05-03")).category("Transport").type("Expense").build());
+            transactions.add(new Transaction.TransactionBuilder("Movie Tickets", 30.00).date(sdf.parse("2024-05-05")).category("Entertainment").type("Expense").build());
+            transactions.add(new Transaction.TransactionBuilder("Freelance Work", 300.00).date(sdf.parse("2024-05-06")).category("Income").type("Income").build());
+        } catch (ParseException e) {
+            System.err.println("Error parsing sample dates: " + e.getMessage());
+        }
+    }
+
+    private void refreshTable() {
+        // Clear existing rows
+        tableModel.setRowCount(0);
+        // Populate table from transactions list
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        for (Transaction t : transactions) {
+            tableModel.addRow(new Object[]{
+                sdf.format(t.getDate()),
+                t.getDescription(),
+                t.getCategory(),
+                t.getAmount(),
+                t.getType()
+            });
+        }
+    }
+    
+    private void refreshViews() {
+        refreshTable();
+        populateGridView();
+    }
+
+
+    private void populateGridView() {
         if (gridViewContainerPanel == null) {
             System.err.println("gridViewContainerPanel is null, cannot populate grid view.");
             return;
         }
-        if (tableModel == null) {
-            System.err.println("tableModel is null, cannot populate grid view.");
+        if (transactions == null) { // Check transactions list
+            System.err.println("transactions list is null, cannot populate grid view.");
             return;
         }
 
@@ -190,12 +313,10 @@ public class Dashboard {
 
         JPanel actualGridHolder = new JPanel();
         
-        // Get data from the tableModel
-        Vector<Vector> dataVector = tableModel.getDataVector();
-        int numItems = dataVector.size();
+        int numItems = transactions.size();
 
         int numColumns = 2; 
-        int numRows = (numItems == 0) ? 1 : (int) Math.ceil((double) numItems / numColumns); // Ensure at least 1 row for empty message
+        int numRows = (numItems == 0) ? 1 : (int) Math.ceil((double) numItems / numColumns);
         
         actualGridHolder.setLayout(new GridLayout(numRows, numColumns, 10, 10)); 
         actualGridHolder.setBorder(new EmptyBorder(10, 10, 10, 10)); 
@@ -204,14 +325,11 @@ public class Dashboard {
         if (numItems == 0) {
             JLabel emptyLabel = new JLabel("No transactions to display.", SwingConstants.CENTER);
             emptyLabel.setFont(new Font("Roboto", Font.ITALIC, 16));
-            // Add to a panel that will be centered in actualGridHolder if GridLayout has 1,1
-            // For simplicity, if grid is 1x2 due to numColumns=2, this might not look perfect.
-            // A better way for empty state is to have a separate panel for it.
-            // For now, just add it directly.
-            actualGridHolder.setLayout(new BorderLayout()); // Change layout for single empty message
+            actualGridHolder.setLayout(new BorderLayout());
             actualGridHolder.add(emptyLabel, BorderLayout.CENTER);
         } else {
-            for (Vector<Object> rowVector : dataVector) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            for (Transaction t : transactions) {
                 JPanel cardPanel = new JPanel(new BorderLayout(5, 5));
                 cardPanel.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(Color.GRAY, 1),
@@ -219,17 +337,23 @@ public class Dashboard {
                 ));
                 cardPanel.setBackground(Color.WHITE);
 
-                // Data from rowVector: Date, Description, Category, Amount
-                JLabel descriptionLabel = new JLabel("<html><b>Desc:</b> " + rowVector.get(1).toString() + "</html>");
-                JLabel categoryLabel = new JLabel("Category: " + rowVector.get(2).toString());
-                JLabel dateLabel = new JLabel("Date: " + rowVector.get(0).toString());
-                JLabel amountLabel = new JLabel(String.format("<html><b>Amount: $%.2f</b></html>", (Double) rowVector.get(3)));
+                JLabel descriptionLabel = new JLabel("<html><b>Desc:</b> " + t.getDescription() + "</html>");
+                JLabel categoryLabel = new JLabel("Category: " + t.getCategory());
+                JLabel dateLabel = new JLabel("Date: " + sdf.format(t.getDate()));
+                JLabel amountLabel = new JLabel(String.format("<html><b>Amount: $%.2f</b> (%s)</html>", t.getAmount(), t.getType()));
                 
                 Font defaultFont = new Font("Roboto", Font.PLAIN, 12);
                 descriptionLabel.setFont(defaultFont);
                 categoryLabel.setFont(defaultFont);
                 dateLabel.setFont(defaultFont);
                 amountLabel.setFont(new Font("Roboto", Font.BOLD, 13));
+                // Color code amount based on type
+                if ("Expense".equalsIgnoreCase(t.getType())) {
+                    amountLabel.setForeground(Color.RED);
+                } else if ("Income".equalsIgnoreCase(t.getType())) {
+                    amountLabel.setForeground(Color.GREEN.darker());
+                }
+
 
                 JPanel textPanel = new JPanel(); 
                 textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
@@ -245,7 +369,6 @@ public class Dashboard {
                 actualGridHolder.add(cardPanel);
             }
             
-            // Fill remaining cells if GridLayout is used and items don't fill the last row
             if (actualGridHolder.getLayout() instanceof GridLayout) {
                  int totalCells = numRows * numColumns;
                  for (int i = numItems; i < totalCells; i++) {
@@ -265,5 +388,5 @@ public class Dashboard {
         gridViewContainerPanel.repaint();
     }
 
-    // TODO: Add methods for data management, upgradeButton, viewLogsButton action listeners etc.
+    // TODO: Add methods for data management, viewLogsButton action listeners etc.
 }
