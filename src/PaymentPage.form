@@ -21,7 +21,7 @@
           <text value="Proceed"/>
         </properties>
       </component>
-      <component id="ff755" class="javax.swing.JPasswordField" binding="passwordField1" default-binding="true">
+      <component id="ff755" class="javax.swing.JPasswordField" binding="cardNumberField">
         <constraints>
           <grid row="5" column="1" row-span="1" col-span="2" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
             <preferred-size width="150" height="-1"/>
@@ -29,7 +29,7 @@
         </constraints>
         <properties/>
       </component>
-      <component id="6e3c7" class="javax.swing.JTextField" binding="textField1" default-binding="true">
+      <component id="6e3c7" class="javax.swing.JTextField" binding="cardOwnerField">
         <constraints>
           <grid row="4" column="1" row-span="1" col-span="2" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
             <preferred-size width="150" height="-1"/>
@@ -53,12 +53,12 @@
           <text value="Upgrade To Premium"/>
         </properties>
       </component>
-      <component id="ab3fd" class="javax.swing.JRadioButton" binding="cashRadioButton" default-binding="true">
+      <component id="ab3fd" class="javax.swing.JRadioButton" binding="creditCardRadioButton">
         <constraints>
           <grid row="3" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text value="Cash"/>
+          <text value="Credit Card"/>
         </properties>
       </component>
       <grid id="33d7b" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
