@@ -17,7 +17,7 @@ public class Dashboard {
     private JButton deleteButton;
     private JButton duplicateButton; // New button for duplicating transactions
     private JButton upgradeButton;
-    private JButton viewLogsButton;
+    private JButton historyLogButton; // New button for History Log
     private JFrame frame;
 
     // Fields for CardLayout components bound from .form
@@ -172,6 +172,14 @@ public class Dashboard {
                 new PaymentPage();
                 // Optionally, you might want to close or hide the dashboard
                 // frame.dispose(); // or frame.setVisible(false);
+            });
+        }
+
+        // Action listener for History Log button
+        if (historyLogButton != null) {
+            historyLogButton.addActionListener(e -> {
+                // Open HistoryLogPage
+                new HistoryLogPage();
             });
         }
 
