@@ -142,24 +142,9 @@ public class Dashboard {
             deleteButton.addActionListener(e -> {
                 int selectedRow = dataTable.getSelectedRow();
                 if (selectedRow >= 0) {
-                    // Convert view row index to model row index in case of sorting/filtering
                     int modelRow = dataTable.convertRowIndexToModel(selectedRow);
-                    
-                    Transaction toDelete = transactions.get(modelRow); // Get transaction from our list
-
-                    int confirm = JOptionPane.showConfirmDialog(frame, 
-                        "Are you sure you want to delete this transaction?\\n" + 
-                        toDelete.getDescription() + " - $" + String.format("%.2f", toDelete.getAmount()), 
-                        "Confirm Deletion", 
-                        JOptionPane.YES_NO_OPTION, 
-                        JOptionPane.WARNING_MESSAGE);
-                    
-                    if (confirm == JOptionPane.YES_OPTION) {
-                        transactions.remove(modelRow); // Remove from our list
-                        refreshViews(); // Refresh both table and grid view
-                        System.out.println("LOG: Transaction Deleted - " + toDelete.toString());
-                        JOptionPane.showMessageDialog(frame, "Transaction deleted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                    }
+                    Transaction toDelete = transactions.get(modelRow);
+                    handleDeleteTransaction(toDelete);
                 } else {
                     JOptionPane.showMessageDialog(frame, "Please select a transaction from the list to delete.", "No Selection", JOptionPane.WARNING_MESSAGE);
                 }
@@ -173,63 +158,7 @@ public class Dashboard {
                 if (selectedRow >= 0) {
                     int modelRow = dataTable.convertRowIndexToModel(selectedRow);
                     Transaction originalTransaction = transactions.get(modelRow);
-
-                    // Use the Prototype pattern's clone method
-                    Transaction clonedTransaction = originalTransaction.clone();
-
-                    // More interactive approach: Open dialog to edit the clone
-                    JTextField dateField = new JTextField(new SimpleDateFormat("yyyy-MM-dd").format(clonedTransaction.getDate()));
-                    JTextField descriptionField = new JTextField(clonedTransaction.getDescription());
-                    JTextField categoryField = new JTextField(clonedTransaction.getCategory());
-                    JTextField amountField = new JTextField(String.valueOf(clonedTransaction.getAmount()));
-                    JComboBox<String> typeComboBox = new JComboBox<>(new String[]{"Expense", "Income"});
-                    typeComboBox.setSelectedItem(clonedTransaction.getType());
-
-                    Object[] message = {
-                        "Edit Duplicated Transaction:",
-                        "Date (YYYY-MM-DD):", dateField,
-                        "Description:", descriptionField,
-                        "Category:", categoryField,
-                        "Amount:", amountField,
-                        "Type:", typeComboBox
-                    };
-
-                    int option = JOptionPane.showConfirmDialog(frame, message, "Duplicate Transaction", JOptionPane.OK_CANCEL_OPTION);
-                    if (option == JOptionPane.OK_OPTION) {
-                        String dateStr = dateField.getText();
-                        String description = descriptionField.getText();
-                        String category = categoryField.getText();
-                        String amountStr = amountField.getText();
-                        String type = (String) typeComboBox.getSelectedItem();
-
-                        if (dateStr.trim().isEmpty() || description.trim().isEmpty() || category.trim().isEmpty() || amountStr.trim().isEmpty()) {
-                            JOptionPane.showMessageDialog(frame, "All fields must be filled.", "Input Error", JOptionPane.ERROR_MESSAGE);
-                            return;
-                        }
-
-                        try {
-                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                            Date date = sdf.parse(dateStr);
-                            double amount = Double.parseDouble(amountStr);
-
-                            Transaction finalDuplicatedTransaction = new Transaction.TransactionBuilder(description, amount)
-                                    .date(date)
-                                    .category(category)
-                                    .type(type)
-                                    .build();
-                            
-                            transactions.add(finalDuplicatedTransaction);
-                            refreshViews();
-                            System.out.println("LOG: Transaction Duplicated and Added - " + finalDuplicatedTransaction.toString());
-                            JOptionPane.showMessageDialog(frame, "Transaction duplicated and added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                        } catch (ParseException ex) {
-                            JOptionPane.showMessageDialog(frame, "Invalid date format. Please use YYYY-MM-DD.", "Input Error", JOptionPane.ERROR_MESSAGE);
-                        } catch (NumberFormatException ex) {
-                            JOptionPane.showMessageDialog(frame, "Invalid amount. Please enter a numeric value.", "Input Error", JOptionPane.ERROR_MESSAGE);
-                        } catch (IllegalStateException ex) {
-                            JOptionPane.showMessageDialog(frame, ex.getMessage(), "Input Error", JOptionPane.ERROR_MESSAGE);
-                        }
-                    }
+                    handleDuplicateTransaction(originalTransaction);
                 } else {
                     JOptionPane.showMessageDialog(frame, "Please select a transaction from the list to duplicate.", "No Selection", JOptionPane.WARNING_MESSAGE);
                 }
@@ -260,6 +189,83 @@ public class Dashboard {
 
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+    }
+
+    private void handleDeleteTransaction(Transaction transactionToDelete) {
+        if (transactionToDelete == null) return;
+
+        int confirm = JOptionPane.showConfirmDialog(frame,
+                "Are you sure you want to delete this transaction?\\n" +
+                        transactionToDelete.getDescription() + " - $" + String.format("%.2f", transactionToDelete.getAmount()),
+                "Confirm Deletion",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            transactions.remove(transactionToDelete); // Remove from our list
+            refreshViews(); // Refresh both table and grid view
+            System.out.println("LOG: Transaction Deleted - " + transactionToDelete.toString());
+            JOptionPane.showMessageDialog(frame, "Transaction deleted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private void handleDuplicateTransaction(Transaction originalTransaction) {
+        if (originalTransaction == null) return;
+
+        Transaction clonedTransaction = originalTransaction.clone();
+
+        JTextField dateField = new JTextField(new SimpleDateFormat("yyyy-MM-dd").format(clonedTransaction.getDate()));
+        JTextField descriptionField = new JTextField(clonedTransaction.getDescription());
+        JTextField categoryField = new JTextField(clonedTransaction.getCategory());
+        JTextField amountField = new JTextField(String.valueOf(clonedTransaction.getAmount()));
+        JComboBox<String> typeComboBox = new JComboBox<>(new String[]{"Expense", "Income"});
+        typeComboBox.setSelectedItem(clonedTransaction.getType());
+
+        Object[] message = {
+            "Edit Duplicated Transaction:",
+            "Date (YYYY-MM-DD):", dateField,
+            "Description:", descriptionField,
+            "Category:", categoryField,
+            "Amount:", amountField,
+            "Type:", typeComboBox
+        };
+
+        int option = JOptionPane.showConfirmDialog(frame, message, "Duplicate Transaction", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            String dateStr = dateField.getText();
+            String description = descriptionField.getText();
+            String category = categoryField.getText();
+            String amountStr = amountField.getText();
+            String type = (String) typeComboBox.getSelectedItem();
+
+            if (dateStr.trim().isEmpty() || description.trim().isEmpty() || category.trim().isEmpty() || amountStr.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(frame, "All fields must be filled.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                Date date = sdf.parse(dateStr);
+                double amount = Double.parseDouble(amountStr);
+
+                Transaction finalDuplicatedTransaction = new Transaction.TransactionBuilder(description, amount)
+                        .date(date)
+                        .category(category)
+                        .type(type)
+                        .build();
+                
+                transactions.add(finalDuplicatedTransaction);
+                refreshViews();
+                System.out.println("LOG: Transaction Duplicated and Added - " + finalDuplicatedTransaction.toString());
+                JOptionPane.showMessageDialog(frame, "Transaction duplicated and added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } catch (ParseException ex) {
+                JOptionPane.showMessageDialog(frame, "Invalid date format. Please use YYYY-MM-DD.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(frame, "Invalid amount. Please enter a numeric value.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            } catch (IllegalStateException ex) {
+                JOptionPane.showMessageDialog(frame, ex.getMessage(), "Input Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     private void loadSampleTransactions() {
@@ -330,6 +336,7 @@ public class Dashboard {
         } else {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
             for (Transaction t : transactions) {
+                final Transaction currentTransaction = t; // Make effectively final for lambda
                 JPanel cardPanel = new JPanel(new BorderLayout(5, 5));
                 cardPanel.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(Color.GRAY, 1),
@@ -347,13 +354,12 @@ public class Dashboard {
                 categoryLabel.setFont(defaultFont);
                 dateLabel.setFont(defaultFont);
                 amountLabel.setFont(new Font("Roboto", Font.BOLD, 13));
-                // Color code amount based on type
+
                 if ("Expense".equalsIgnoreCase(t.getType())) {
                     amountLabel.setForeground(Color.RED);
                 } else if ("Income".equalsIgnoreCase(t.getType())) {
                     amountLabel.setForeground(Color.GREEN.darker());
                 }
-
 
                 JPanel textPanel = new JPanel(); 
                 textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
@@ -365,6 +371,25 @@ public class Dashboard {
                 textPanel.add(amountLabel);
 
                 cardPanel.add(textPanel, BorderLayout.CENTER);
+
+                // Panel for buttons
+                JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+                buttonPanel.setBackground(Color.WHITE);
+
+                JButton cardDuplicateButton = new JButton("Duplicate");
+                cardDuplicateButton.setFont(new Font("Roboto", Font.PLAIN, 10));
+                cardDuplicateButton.setMargin(new Insets(2, 5, 2, 5));
+                cardDuplicateButton.addActionListener(e -> handleDuplicateTransaction(currentTransaction));
+                
+                JButton cardDeleteButton = new JButton("Delete");
+                cardDeleteButton.setFont(new Font("Roboto", Font.PLAIN, 10));
+                cardDeleteButton.setMargin(new Insets(2, 5, 2, 5));
+                cardDeleteButton.addActionListener(e -> handleDeleteTransaction(currentTransaction));
+
+                buttonPanel.add(cardDuplicateButton);
+                buttonPanel.add(cardDeleteButton);
+                
+                cardPanel.add(buttonPanel, BorderLayout.SOUTH);
                 
                 actualGridHolder.add(cardPanel);
             }
