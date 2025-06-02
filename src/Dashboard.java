@@ -1,4 +1,3 @@
-
 import java.awt.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -49,7 +48,7 @@ public class Dashboard {
         this.transactionManager = new TransactionManagerFacade();
 
         // Initialize JFrame
-        frame = new JFrame("Financial Dashboard - " + currentUserEmail);
+        frame = new JFrame("Financial Dashboard - " + currentUserEmail); // Initialize frame here
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         // panel1 is the root panel from Dashboard.form. It should contain viewSwitchPanel.
         // viewSwitchPanel, in turn, should contain scrollPane (as listViewCard)
@@ -133,7 +132,6 @@ public class Dashboard {
         model.addColumn("Amount");
         model.addColumn("Date");
         model.addColumn("Description");
-        model.addColumn("Flagged");
         if (dataTable == null) dataTable = new JTable(); // Defensive initialization
         dataTable.setModel(model);
         dataTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -182,11 +180,17 @@ public class Dashboard {
             } else {
                 // Fallback, though userContext should be initialized
                 System.err.println("UserContext not initialized in Dashboard. Opening payment page directly.");
-                // Passing null for UserContext if it's not available, though this path should ideally not be hit.
-                new PaymentPage(currentUserEmail, null).setVisible(true); 
+                // Passing null for UserContext if it\'s not available, though this path should ideally not be hit.
+                new PaymentPage(currentUserEmail, null).setVisible(true);
             }
         });
         if(historyLogButton != null) historyLogButton.addActionListener(e -> openHistoryLogPage());
+        if(profileButton != null) profileButton.addActionListener(e -> openProfilePage());
+    }
+
+    private void openProfilePage() {
+        new ProfilePage(currentUserEmail); // Pass currentUserEmail
+        frame.dispose();
     }
 
     private void setViewStrategy(DashboardViewStrategy strategy) {
@@ -390,7 +394,8 @@ public class Dashboard {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            UserManager.getInstance().registerUser("test@example.com", "password");
+            // Corrected registerUser call to include a name, email, and password
+            UserManager.getInstance().registerUser("Test User", "test@example.com", "password");
             new Dashboard("test@example.com");
         });
     }

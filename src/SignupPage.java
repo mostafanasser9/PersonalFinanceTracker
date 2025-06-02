@@ -6,10 +6,10 @@ import java.awt.event.MouseEvent;
 import javax.swing.*;
 
 public class SignupPage {
-    private JTextField textField1;
+    private JTextField textField1; // Name
     private JPanel panel1;
-    private JTextField textField2; // Assuming this is for username
-    private JPasswordField passwordField1;
+    private JTextField textField2; // Email
+    private JPasswordField passwordField1; // Password
     private JButton SIGNUPButton;
     private JLabel loginLabel; // This should be bound in the .form file to the id "logLabel"
     private JTextArea enterYourDetailsToTextArea;
@@ -70,23 +70,39 @@ public class SignupPage {
             SIGNUPButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    String username = textField2.getText(); // Assuming textField2 is for username
+                    String name = textField1.getText().trim(); 
+                    String email = textField2.getText().trim(); 
                     String password = new String(passwordField1.getPassword());
-                    // You might want to add validation for email (textField1) and password strength here
 
-                    if (username.isEmpty() || password.isEmpty()) {
-                        JOptionPane.showMessageDialog(frame, "Username and password cannot be empty.", "Signup Error", JOptionPane.ERROR_MESSAGE);
+                    if (name.isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "Name cannot be empty.", "Signup Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (email.isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "Email cannot be empty.", "Signup Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    // Basic email format validation
+                    if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                        JOptionPane.showMessageDialog(frame, "Invalid email format.", "Signup Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (password.isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "Password cannot be empty.", "Signup Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (password.length() < 8) {
+                        JOptionPane.showMessageDialog(frame, "Password must be at least 8 characters long.", "Signup Error", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
 
-                    if (userManager.registerUser(username, password)) {
+                    // Updated to use the new registerUser signature
+                    if (userManager.registerUser(name, email, password)) { 
                         JOptionPane.showMessageDialog(frame, "Registration successful! Please login.", "Signup Success", JOptionPane.INFORMATION_MESSAGE);
-                        // Open LoginPage
                         new LoginPage();
-                        // Close current SignupPage frame
                         frame.dispose();
                     } else {
-                        JOptionPane.showMessageDialog(frame, "Username already exists. Please choose another one.", "Signup Failed", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(frame, "Email already exists. Please choose another one or login.", "Signup Failed", JOptionPane.ERROR_MESSAGE);
                     }
                 }
             });

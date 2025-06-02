@@ -18,6 +18,10 @@ public class ListViewStrategy implements DashboardViewStrategy {
     public void displayTransactions(List<DisplayableTransaction> transactions) {
         DefaultTableModel model = (DefaultTableModel) dataTable.getModel();
         model.setRowCount(0); // Clear existing data
+        // Ensure the model has the correct columns, excluding "Flagged"
+        String[] columnIdentifiers = {"Type", "Category", "Amount", "Date", "Description"};
+        model.setColumnIdentifiers(columnIdentifiers);
+
         for (DisplayableTransaction t : transactions) {
             model.addRow(new Object[]{
                 t.getType(),
@@ -25,7 +29,7 @@ public class ListViewStrategy implements DashboardViewStrategy {
                 t.getAmount(),
                 t.getDate().toString(), // Consider formatting the date
                 t.getDescription(),
-                t.getDisplayBackgroundColor() != null // Flagged status
+                // Removed t.isFlagged() or similar logic for the "Flagged" column
             });
         }
     }

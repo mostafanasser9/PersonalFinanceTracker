@@ -34,8 +34,22 @@ public class LoginPage {
             LOGINButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    String username = textField1.getText();
+                    String username = textField1.getText().trim();
                     String password = new String(passwordField1.getPassword());
+
+                    if (username.isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "Email cannot be empty.", "Login Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (password.isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "Password cannot be empty.", "Login Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (password.length() < 8) {
+                        JOptionPane.showMessageDialog(frame, "Password must be at least 8 characters long.", "Login Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
                     if (userManager.loginUser(username, password)) {
                         // Open Dashboard and pass the username (email)
                         new Dashboard(username);

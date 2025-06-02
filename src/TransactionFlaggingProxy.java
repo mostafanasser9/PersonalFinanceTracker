@@ -1,6 +1,5 @@
 // No package declaration needed
 import java.awt.Color;
-import javax.swing.JOptionPane;
 
 
 // Proxy Class
@@ -16,12 +15,12 @@ public class TransactionFlaggingProxy implements TransactionFlagging {
     @Override
     public void flagTransaction(int modelRow, DisplayableTransaction transactionToFlag, Color color) {
         realTransactionFlagging.flagTransaction(modelRow, transactionToFlag, color);
-        HistoryLogger.getInstance().addLog("Flagged transaction: " + transactionToFlag.getDescription());
+        // HistoryLogger.getInstance().addLog("Flagged transaction: " + transactionToFlag.getDescription()); // Removed duplicate logging
     }
 
     @Override
     public void unflagTransaction(int modelRow, DisplayableTransaction transactionToFlag) {
         realTransactionFlagging.unflagTransaction(modelRow, transactionToFlag);
-        HistoryLogger.getInstance().addLog("Unflagged transaction: " + transactionToFlag.getDescription());
+        // HistoryLogger.getInstance().addLog("Unflagged transaction: " + transactionToFlag.getDescription()); // Removed duplicate logging
     }
 }
