@@ -5,11 +5,13 @@ import java.awt.event.ActionListener;
 public class PaymentPage extends JFrame {
     private JPanel mainPanel;
     private JButton proceedButton;
-    private JPasswordField cardNumberField; // Your new field for CVV / PayPal Password
-    private JTextField cardOwnerField;    // Your new field for Card Number / PayPal Email
+    private JPasswordField cardNumberField; // Used for CVV / PayPal Password
+    private JTextField cardOwnerField;    // Used for Card Number / PayPal Email
     private JRadioButton payPalRadioButton;
     private JRadioButton creditCardRadioButton;
     private JPanel Payment;
+    private JLabel cardOwnerLabel; // Label for the first input field
+    private JLabel cardNumberLabel; // Label for the second input field
     private String currentUserEmail;
     private UserContext userContext; // Added UserContext
 
@@ -17,7 +19,7 @@ public class PaymentPage extends JFrame {
         this.currentUserEmail = userEmail;
         this.userContext = userContext; // Store UserContext
         setTitle("Payment Page - " + currentUserEmail);
-        setContentPane(Payment);
+        setContentPane(Payment); // Assuming 'Payment' is the main JPanel from your .form file
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setSize(600, 400);
         setLocationRelativeTo(null);
@@ -26,7 +28,12 @@ public class PaymentPage extends JFrame {
         ButtonGroup paymentMethodGroup = new ButtonGroup();
         paymentMethodGroup.add(payPalRadioButton);
         paymentMethodGroup.add(creditCardRadioButton);
-        payPalRadioButton.setSelected(true);
+        payPalRadioButton.setSelected(true); // Default selection
+        updateLabels(); // Initial label setup based on default selection
+
+        // Add action listeners to radio buttons to update labels dynamically
+        payPalRadioButton.addActionListener(e -> updateLabels());
+        creditCardRadioButton.addActionListener(e -> updateLabels());
 
         proceedButton.addActionListener(new ActionListener() {
             @Override
@@ -35,23 +42,46 @@ public class PaymentPage extends JFrame {
                 Command commandToExecute = null;
 
                 if (payPalRadioButton.isSelected()) {
-                    PaymentProcessor paymentProcessor = new PayPalAdapter(new PayPalGateway()); // Initialize the paymentProcessor
-                    String payPalEmail = cardOwnerField.getText();
+                    PaymentProcessor paymentProcessor = new PayPalAdapter(new PayPalGateway());
+                    String payPalEmail = cardOwnerField.getText().trim();
+                    String payPalPassword = new String(cardNumberField.getPassword());
+
                     if (payPalEmail.isEmpty()) {
-                        payPalEmail = currentUserEmail; // Default to current user's email if field is empty
+                        JOptionPane.showMessageDialog(PaymentPage.this, "PayPal email cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (!payPalEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                        JOptionPane.showMessageDialog(PaymentPage.this, "Invalid PayPal email format.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (payPalPassword.isEmpty()) {
+                        JOptionPane.showMessageDialog(PaymentPage.this, "PayPal password cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                        return;
                     }
                     commandToExecute = new PayPalPaymentCommand(paymentProcessor, upgradeAmount, payPalEmail);
                 } else if (creditCardRadioButton.isSelected()) {
-                    PaymentProcessor paymentProcessor = new CreditCardAdapter(new CreditCardGateway()); // Initialize the paymentProcessor
-                    String ccNumber = cardOwnerField.getText();
-                    String cvv = new String(cardNumberField.getPassword());
+                    PaymentProcessor paymentProcessor = new CreditCardAdapter(new CreditCardGateway());
+                    String actualCardNumber = cardOwnerField.getText().trim(); // cardOwnerField for Card Number
+                    String cvv = new String(cardNumberField.getPassword()); // cardNumberField for CVV
                     String expiryDate = "12/25"; // Placeholder, ideally from another UI field
 
-                    if (ccNumber.isEmpty() || cvv.isEmpty()) {
-                        JOptionPane.showMessageDialog(PaymentPage.this, "Card number and CVV cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                    if (actualCardNumber.isEmpty()) {
+                        JOptionPane.showMessageDialog(PaymentPage.this, "Card number cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
-                    commandToExecute = new CreditCardPaymentCommand(paymentProcessor, upgradeAmount, currentUserEmail, ccNumber, expiryDate, cvv);
+                    if (!actualCardNumber.matches("^\\d{16}$")) {
+                        JOptionPane.showMessageDialog(PaymentPage.this, "Invalid card number format (should be 16 digits).", "Input Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (cvv.isEmpty()) {
+                        JOptionPane.showMessageDialog(PaymentPage.this, "CVV cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (!cvv.matches("^\\d{3,4}$")) {
+                        JOptionPane.showMessageDialog(PaymentPage.this, "Invalid CVV format (should be 3 or 4 digits).", "Input Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    commandToExecute = new CreditCardPaymentCommand(paymentProcessor, upgradeAmount, currentUserEmail, actualCardNumber, expiryDate, cvv);
                 } else {
                      JOptionPane.showMessageDialog(PaymentPage.this, "Please select a payment method.", "Payment Error", JOptionPane.WARNING_MESSAGE);
                      return;
@@ -61,7 +91,6 @@ public class PaymentPage extends JFrame {
                     if (commandToExecute.execute()) {
                         handlePaymentSuccess();
                     } else {
-                        // Show specific error message based on which payment method failed
                         if (payPalRadioButton.isSelected()) {
                             JOptionPane.showMessageDialog(PaymentPage.this, "PayPal Payment Failed.", "Payment Error", JOptionPane.ERROR_MESSAGE);
                         } else if (creditCardRadioButton.isSelected()) {
@@ -74,6 +103,18 @@ public class PaymentPage extends JFrame {
         setVisible(true);
     }
 
+    private void updateLabels() {
+        if (payPalRadioButton.isSelected()) {
+            if (cardOwnerLabel != null) cardOwnerLabel.setText("PayPal Email:");
+            if (cardNumberLabel != null) cardNumberLabel.setText("PayPal Password:");
+            if (cardNumberField != null) cardNumberField.setEchoChar('*'); // Mask password
+        } else if (creditCardRadioButton.isSelected()) {
+            if (cardOwnerLabel != null) cardOwnerLabel.setText("Card Number:");
+            if (cardNumberLabel != null) cardNumberLabel.setText("CVV:");
+            if (cardNumberField != null) cardNumberField.setEchoChar('*'); // Mask CVV
+        }
+    }
+
     private void handlePaymentSuccess() {
         UserManager.getInstance().setUserRole(currentUserEmail, "premium");
         if (this.userContext != null) {
@@ -84,7 +125,6 @@ public class PaymentPage extends JFrame {
     }
 
     public static void main(String[] args) {
-        // Example usage: Pass a dummy email or get it from a logged-in session
         SwingUtilities.invokeLater(() -> new PaymentPage("test@example.com", new UserContext("test@example.com", null)));
     }
 }

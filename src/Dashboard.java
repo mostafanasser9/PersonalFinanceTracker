@@ -30,6 +30,7 @@ public class Dashboard {
     // It must be added to viewSwitchPanel with the name "gridViewCard" in your .form or setup code.
     private JPanel gridViewContainerPanel; // Panel for grid view items, bound from .form
     private JButton profileButton;
+    private JButton logoutButton;
 
     // Strategy Pattern
     private DashboardViewStrategy currentViewStrategy;
@@ -186,6 +187,13 @@ public class Dashboard {
         });
         if(historyLogButton != null) historyLogButton.addActionListener(e -> openHistoryLogPage());
         if(profileButton != null) profileButton.addActionListener(e -> openProfilePage());
+        if(logoutButton != null) logoutButton.addActionListener(e -> logoutUser()); // Added logoutButton listener
+    }
+
+    private void logoutUser() {
+        JOptionPane.showMessageDialog(frame, "Logged Out Successfully", "Logout", JOptionPane.INFORMATION_MESSAGE);
+        new LoginPage();
+        frame.dispose();
     }
 
     private void openProfilePage() {
