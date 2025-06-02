@@ -2,5 +2,6 @@ test:test:premium
 alylol@gmail.com:1234:standard
 disha:disha:premium
 admin:admin:premium
+test@example.com:password:standard
 mostafaadelnasser@gmail.com:12345678:standard
 alylol04@gmail.com:12345:standard

@@ -12,6 +12,7 @@ public class SignupPage {
     private JPasswordField passwordField1;
     private JButton SIGNUPButton;
     private JLabel loginLabel; // This should be bound in the .form file to the id "logLabel"
+    private JTextArea enterYourDetailsToTextArea;
     private JFrame frame;
     private UserManager userManager; // Add UserManager instance
 
@@ -19,7 +20,7 @@ public class SignupPage {
         // Initialize and set up the frame
         frame = new JFrame("Sign Up");
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setPreferredSize(new Dimension(500, 400)); // Or match your .form size
+        frame.setPreferredSize(new Dimension(600, 400)); // Or match your .form size
         frame.setResizable(false);
 
         // The IntelliJ GUI designer should initialize panel1 and its components (like loginLabel)

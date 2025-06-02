@@ -11,6 +11,8 @@ public class LoginPage {
     private JPasswordField passwordField1;
     private JButton LOGINButton;
     private JLabel registerLabel; // Added for the new label
+    private JTextArea enterYourDetailsToTextArea;
+    private JLabel Login;
     private JFrame frame;
     private UserManager userManager; // Add UserManager instance
 

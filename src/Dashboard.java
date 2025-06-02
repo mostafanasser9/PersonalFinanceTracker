@@ -30,6 +30,7 @@ public class Dashboard {
     // gridViewContainerPanel should be the actual JPanel used for the grid view card.
     // It must be added to viewSwitchPanel with the name "gridViewCard" in your .form or setup code.
     private JPanel gridViewContainerPanel; // Panel for grid view items, bound from .form
+    private JButton profileButton;
 
     // Strategy Pattern
     private DashboardViewStrategy currentViewStrategy;
@@ -70,7 +71,7 @@ public class Dashboard {
         }
 
 
-        frame.setPreferredSize(new Dimension(900, 700));
+        frame.setPreferredSize(new Dimension(1000, 800));
 
         // Ensure components from .form are initialized before use.
         // If not using IntelliJ's GUI designer to bind them, they might be null here.
